@@ -598,3 +598,27 @@ def execute_transaction_steps_from_account_no_chain_id(operator: Keypair, evm_lo
                 raise AssertionError(f"EVM Return error in logs: {receipt}")
             
     return receipt
+
+
+def execute_transaction_steps_from_account_with_solana_call(operator: Keypair, evm_loader: EvmLoader, treasury, storage_account,
+                                           additional_accounts,
+                                           signer: Keypair = None) -> GetTransactionResp:
+    signer = operator if signer is None else signer
+
+    index = 0
+    done = False
+    while not done:
+        receipt = send_transaction_step_from_account(operator, evm_loader, treasury, storage_account,
+                                                     additional_accounts, EVM_STEPS, signer, index=index, tag=0x39)
+        index += 1
+
+        if receipt.value.transaction.meta.err:
+            raise AssertionError(f"Can't deploy contract: {receipt.value.transaction.meta.err}")
+        for log in receipt.value.transaction.meta.log_messages:
+            if "exit_status" in log:
+                done = True
+                break
+            if "ExitError" in log:
+                raise AssertionError(f"EVM Return error in logs: {receipt}")
+
+    return receipt

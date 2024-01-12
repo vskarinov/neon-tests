@@ -5,9 +5,11 @@ import string
 import time
 import typing as tp
 
+import base58
 import solcx
 from eth_abi import abi
 from eth_utils import keccak
+from solana.publickey import PublicKey
 
 
 def get_contract_abi(name, compiled):
@@ -118,3 +120,13 @@ def get_selectors(abi):
         encoded_selector = f"{function['name']}({input_types})"
         selectors.append(keccak(text=encoded_selector)[:4])
     return selectors
+
+
+def bytes32_to_solana_pubkey(bytes32_data):
+    byte_data = bytes.fromhex(bytes32_data)
+    base58_data = base58.b58encode(byte_data)
+    return PublicKey(base58_data.decode('utf-8'))
+
+def solana_pubkey_to_bytes32(solana_pubkey):
+    byte_data = base58.b58decode(str(solana_pubkey))
+    return byte_data.hex().encode('utf-8')

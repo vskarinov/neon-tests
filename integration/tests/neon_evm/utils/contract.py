@@ -33,9 +33,11 @@ def get_contract_bin(
     if version not in [str(v) for v in solcx.get_installed_solc_versions()]:
         solcx.install_solc(version)
 
-    contract_path = (pathlib.Path.cwd() / "contracts" / "neon_evm" / f"{contract}").absolute()
+    contract_path = (pathlib.Path.cwd() / "contracts" / "neon_evm" / contract).absolute()
     if not contract_path.exists():
-        contract_path =  (pathlib.Path.cwd() / "contracts" / "external" / f"{contract}").absolute()
+        contract_path = (pathlib.Path.cwd() / "contracts" / contract).absolute()
+    if not contract_path.exists():
+        contract_path =  (pathlib.Path.cwd() / "contracts" / "external" / contract).absolute()
 
     assert contract_path.exists(), f"Can't found contract: {contract_path}"
 
