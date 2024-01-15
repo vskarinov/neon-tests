@@ -81,9 +81,9 @@ def make_ExecuteTrxFromInstruction(
         treasury_buffer: bytes,
         message: bytes,
         additional_accounts: tp.List[PublicKey],
-        system_program=sp.SYS_PROGRAM_ID,
+        system_program=sp.SYS_PROGRAM_ID, tag=0x32
 ):
-    data = bytes([0x32]) + treasury_buffer + message
+    data = bytes([tag]) + treasury_buffer + message
     operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
     print("make_ExecuteTrxFromInstruction accounts")
     print("Operator: ", operator.public_key)
@@ -91,6 +91,40 @@ def make_ExecuteTrxFromInstruction(
     print("Operator ether: ", operator_ether.hex())
     print("Operator eth solana: ", evm_loader.ether2balance(operator_ether))
     accounts = [
+        AccountMeta(pubkey=operator.public_key, is_signer=True, is_writable=True),
+        AccountMeta(pubkey=treasury_address, is_signer=False, is_writable=True),
+        AccountMeta(pubkey=PublicKey(evm_loader.ether2balance(operator_ether)), is_signer=False, is_writable=True),
+        AccountMeta(system_program, is_signer=False, is_writable=True),
+    ]
+    for acc in additional_accounts:
+        print("Additional acc ", acc)
+        accounts.append(AccountMeta(acc, is_signer=False, is_writable=True), )
+
+    return TransactionInstruction(
+        program_id=PublicKey(EVM_LOADER),
+        data=data,
+        keys=accounts
+    )
+
+def make_ExecuteTrxFromAccount(
+        operator: Keypair,
+        evm_loader: "EvmLoader",
+        holder_address: PublicKey,
+        treasury_address: PublicKey,
+        treasury_buffer: bytes,
+        message: bytes,
+        additional_accounts: tp.List[PublicKey],
+        system_program=sp.SYS_PROGRAM_ID, tag=0x33
+):
+    data = bytes([tag]) + treasury_buffer + message
+    operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
+    print("make_ExecuteTrxFromInstruction accounts")
+    print("Operator: ", operator.public_key)
+    print("Treasury: ", treasury_address)
+    print("Operator ether: ", operator_ether.hex())
+    print("Operator eth solana: ", evm_loader.ether2balance(operator_ether))
+    accounts = [
+        AccountMeta(pubkey=holder_address, is_signer=False, is_writable=True),
         AccountMeta(pubkey=operator.public_key, is_signer=True, is_writable=True),
         AccountMeta(pubkey=treasury_address, is_signer=False, is_writable=True),
         AccountMeta(pubkey=PublicKey(evm_loader.ether2balance(operator_ether)), is_signer=False, is_writable=True),
@@ -155,8 +189,8 @@ def make_PartialCallOrContinueFromRawEthereumTX(
         storage_address: PublicKey,
         treasury: TreasuryPool,
         additional_accounts: tp.List[PublicKey],
-        system_program=sp.SYS_PROGRAM_ID):
-    data = bytes([0x34]) + treasury.buffer + step_count.to_bytes(4, "little") + index.to_bytes(4, "little") + instruction
+        system_program=sp.SYS_PROGRAM_ID, tag=0x34):
+    data = bytes([tag]) + treasury.buffer + step_count.to_bytes(4, "little") + index.to_bytes(4, "little") + instruction
     operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
 
     accounts = [
