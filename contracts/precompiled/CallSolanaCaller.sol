@@ -16,9 +16,8 @@ contract CallSolanaCaller {
         return solanaAddr;
     }
 
-    function execute(uint64 lamports, bytes memory instruction) public {
+    function execute(uint64 lamports, bytes calldata instruction) public {
         _callSolana.execute(lamports, instruction);
-
     }
 
     function getPayer() public returns (bytes32){

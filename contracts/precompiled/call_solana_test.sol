@@ -87,7 +87,7 @@ contract Test {
                 mstore8(pos, 1)
                 pos := add(pos, 8)
 
-                // AccountMeta(resource, false, true)
+                // AccountMeta(owner, true, false)
                 mstore(pos, owner)
                 mstore8(add(pos, 32), 1)
                 mstore8(add(pos, 33), 0)

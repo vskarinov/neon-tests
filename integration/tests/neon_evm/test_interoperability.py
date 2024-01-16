@@ -7,7 +7,7 @@ from solana.keypair import Keypair
 from solana.publickey import PublicKey
 
 from integration.tests.neon_evm.solana_utils import  \
-    EvmLoader, execute_trx_from_instruction_with_solana_call
+    EvmLoader, execute_trx_from_instruction_with_solana_call, execute_trx_from_instruction
 from integration.tests.neon_evm.types.types import Contract, Caller
 from integration.tests.neon_evm.utils.constants import TAG_FINALIZED_STATE
 from integration.tests.neon_evm.utils.contract import make_contract_call_trx, deploy_contract
@@ -49,25 +49,40 @@ class TestInteroperability:
         account_bytes = solana_pubkey_to_bytes32(sender_with_tokens.solana_account_address)
         acc_len = 1
 
+        # serialized_instructions = (
+        #         program_id_bytes +
+        #         # ('00' * 32).encode('utf-8') +
+        #         struct.pack('<Q', acc_len).hex().encode('utf-8') +
+        #         account_bytes +
+        #         struct.pack('?', is_signer).hex().encode('utf-8') +
+        #         struct.pack('?', is_writable).hex().encode('utf-8') +
+        #         # +('00' * 32).encode('utf-8') +
+        #         struct.pack('<Q', len(data)).hex().encode('utf-8') +
+        #         data.hex().encode('utf-8')
+        # )
         serialized_instructions = (
-                program_id_bytes +
-                # ('00' * 32).encode('utf-8') +
-                struct.pack('<Q', acc_len).hex().encode('utf-8') +
-                account_bytes +
-                struct.pack('?', is_signer).hex().encode('utf-8') +
-                struct.pack('?', is_writable).hex().encode('utf-8') +
-                # +('00' * 32).encode('utf-8') +
-                struct.pack('<Q', len(data)).hex().encode('utf-8') +
-                data.hex().encode('utf-8')
+            bytes(PublicKey(program_id)) +
+            acc_len.to_bytes(8, "little") + 
+
+            # There are some limitations to use signers inside the program calls.
+            # Generally you can use contract Solana PDA as signer (getNeonAddress(contract))
+            # or special ext authority.
+            # You can use external signer, but it should sign the transaction (and there is a problem
+            # to emulate such transaction!).
+            # For payment purposes it will be possible to use getPayer() account (feature is not implemented yet).
+            #
+            # But for ComputeBudget there is work without signer contract inside the account list.
+            bytes(sender_with_tokens.balance_account_address) + (0).to_bytes(1, "little") + (0).to_bytes(1, "little") +
+            len(data).to_bytes(8, "little") + data
         )
 
-        print("serialised instructions", serialized_instructions)
+        print("serialised instructions", serialized_instructions.hex().encode('utf-8'))
 
         signed_tx = make_contract_call_trx(sender_with_tokens, solana_caller, "execute(uint64,bytes)",
-                                           [500000, serialized_instructions])
-
+                                           [0, serialized_instructions])
+        
         func_name = abi.function_signature_to_4byte_selector('execute(uint64,bytes)')
-        data = func_name + eth_abi.encode(['uint64', 'bytes'], [500000, serialized_instructions])
+        data = func_name + eth_abi.encode(['uint64', 'bytes'], [0, serialized_instructions])
 
         result = neon_api_client.emulate(sender_with_tokens.eth_address.hex(),
                                          contract=solana_caller.eth_address.hex(), data=data)
@@ -80,6 +95,9 @@ class TestInteroperability:
                                                               treasury_pool.buffer,
                                                               signed_tx,
                                                               [sender_with_tokens.balance_account_address,
+                                                               PublicKey("83fAnx3LLG612mHbEh4HzXEpYwvSB5fqpwUS3sZkRuUB"),
+                                                               PublicKey("ComputeBudget111111111111111111111111111111"),
+
                                                                solana_caller.balance_account_address,
                                                                solana_caller.solana_address],
                                                               operator_keypair)
@@ -106,8 +124,8 @@ class TestInteroperability:
                                                               treasury_pool.buffer,
                                                               signed_tx,
                                                               [sender_with_tokens.balance_account_address,
-                                                               PublicKey(
-                                                              "83fAnx3LLG612mHbEh4HzXEpYwvSB5fqpwUS3sZkRuUB"),
+                                                               PublicKey("83fAnx3LLG612mHbEh4HzXEpYwvSB5fqpwUS3sZkRuUB"),
+                                                               PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
                                                                contract.balance_account_address,
                                                                contract.solana_address],
                                                               operator_keypair)
