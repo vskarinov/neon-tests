@@ -5,13 +5,19 @@ from eth_utils import abi
 from solana.keypair import Keypair
 
 from solana.transaction import TransactionInstruction, AccountMeta
+from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
 
 from integration.tests.neon_evm.solana_utils import EvmLoader, execute_trx_from_instruction_with_solana_call
 from integration.tests.neon_evm.types.types import Contract, Caller
-from integration.tests.neon_evm.utils.constants import COMPUTE_BUDGET_ID, MEMO_PROGRAM_ID, SOLANA_CALL_PRECOMPILED_ID
+from integration.tests.neon_evm.utils.constants import (
+    COMPUTE_BUDGET_ID,
+    MEMO_PROGRAM_ID,
+    SOLANA_CALL_PRECOMPILED_ID,
+    NEON_TOKEN_MINT_ID,
+)
 from integration.tests.neon_evm.utils.contract import make_contract_call_trx, deploy_contract
 from integration.tests.neon_evm.utils.ethereum import make_eth_transaction
-from integration.tests.neon_evm.utils.instructions import serialize_instruction
+from integration.tests.neon_evm.utils.instructions import serialize_instruction, make_CreateAssociatedTokenIdempotent
 from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text
 
 from utils.helpers import bytes32_to_solana_pubkey
@@ -104,6 +110,57 @@ class TestInteroperability:
                 MEMO_PROGRAM_ID,
                 contract.balance_account_address,
                 contract.solana_address,
+            ],
+            operator_keypair,
+        )
+
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+
+    @pytest.mark.skip(reason="In progress")
+    def test_execute_create_acc(
+        self,
+        sender_with_tokens,
+        solana_caller,
+        neon_api_client,
+        holder_acc,
+        operator_keypair,
+        evm_loader,
+        treasury_pool,
+        sol_client,
+    ):
+        payer_bytes32 = neon_api_client.call_contract_get_function(sender_with_tokens, solana_caller, "getPayer()")
+        payer = bytes32_to_solana_pubkey(payer_bytes32)
+        instruction = make_CreateAssociatedTokenIdempotent(
+            payer, sender_with_tokens.solana_account_address, NEON_TOKEN_MINT_ID
+        )
+        serialized_instruction = serialize_instruction(ASSOCIATED_TOKEN_PROGRAM_ID, instruction)
+
+        signed_tx = make_contract_call_trx(
+            sender_with_tokens, solana_caller, "execute(uint64,bytes)", [500000, serialized_instruction]
+        )
+
+        func_name = abi.function_signature_to_4byte_selector("execute(uint64,bytes)")
+        data = func_name + eth_abi.encode(["uint64", "bytes"], [500000, serialized_instruction])
+
+        result = neon_api_client.emulate(
+            sender_with_tokens.eth_address.hex(), contract=solana_caller.eth_address.hex(), data=data
+        )
+
+        print("emulation response:", result)
+
+        resp = execute_trx_from_instruction_with_solana_call(
+            operator_keypair,
+            evm_loader,
+            treasury_pool.account,
+            treasury_pool.buffer,
+            signed_tx,
+            [
+                sender_with_tokens.balance_account_address,
+                sender_with_tokens.solana_account_address,
+                SOLANA_CALL_PRECOMPILED_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID,
+                solana_caller.balance_account_address,
+                solana_caller.solana_address,
             ],
             operator_keypair,
         )
