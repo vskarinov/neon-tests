@@ -6,6 +6,7 @@ import time
 import typing as tp
 
 import base58
+import web3
 import solcx
 from eth_abi import abi
 from eth_utils import keccak
@@ -39,9 +40,7 @@ def get_contract_interface(
     else:
         contract_path = (pathlib.Path.cwd() / "contracts" / f"{contract}").absolute()
         if not contract_path.exists():
-            contract_path = (
-                pathlib.Path.cwd() / "contracts" / "external" / f"{contract}"
-            ).absolute()
+            contract_path = (pathlib.Path.cwd() / "contracts" / "external" / f"{contract}").absolute()
 
     assert contract_path.exists(), f"Can't found contract: {contract_path}"
 
@@ -87,6 +86,7 @@ def wait_condition(func_cond, timeout_sec=15, delay=0.5):
         try:
             if func_cond():
                 break
+
         except Exception as e:
             print(f"Error during waiting: {e}")
         time.sleep(delay)
@@ -109,9 +109,7 @@ def get_selectors(abi):
         for input in function["inputs"]:
             if "struct" in input["internalType"]:
                 struct_name = input["name"]
-                struct_types = ",".join(
-                    i["type"] for i in input["components"] if i["name"] != struct_name
-                )
+                struct_types = ",".join(i["type"] for i in input["components"] if i["name"] != struct_name)
                 input_types += "," + f"({struct_types})[]"
             else:
                 input_types += "," + input["type"]
@@ -122,10 +120,19 @@ def get_selectors(abi):
     return selectors
 
 
+def create_invalid_address(length=20) -> str:
+    """Create non-existing account address"""
+    address = gen_hash_of_block(length)
+    while web3.Web3.is_checksum_address(address):
+        address = gen_hash_of_block(length)
+    return address
+
+
 def bytes32_to_solana_pubkey(bytes32_data):
     byte_data = bytes.fromhex(bytes32_data)
     base58_data = base58.b58encode(byte_data)
     return PublicKey(base58_data.decode('utf-8'))
+
 
 def solana_pubkey_to_bytes32(solana_pubkey):
     byte_data = base58.b58decode(str(solana_pubkey))
