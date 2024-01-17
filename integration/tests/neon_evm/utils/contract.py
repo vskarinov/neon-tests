@@ -105,8 +105,9 @@ def make_contract_call_trx(user, contract, function_signature, params=None, valu
     #         elif isinstance(param, str):
     #             data += eth_abi.encode(['string'], [param])
 
-    types = [get_abi_type(param) for param in params]
-    data += eth_abi.encode(types, params)
+    if params is not None:
+        types = [get_abi_type(param) for param in params]
+        data += eth_abi.encode(types, params)
 
     signed_tx = make_eth_transaction(contract.eth_address, data, user, value=value, 
                                      chain_id=chain_id, access_list=access_list, type=trx_type)

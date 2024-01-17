@@ -15,7 +15,17 @@ from integration.tests.neon_evm.utils.ethereum import make_eth_transaction
 from integration.tests.neon_evm.utils.transaction_checks import check_holder_account_tag, \
     check_transaction_logs_have_text
 from utils.helpers import bytes32_to_solana_pubkey, solana_pubkey_to_bytes32
+from solana.transaction import AccountMeta, TransactionInstruction
 
+from solana.system_program import transfer as solana_transfer, TransferParams
+
+def find_contract_payer(evm_loader_id, eth_address):
+    return PublicKey.find_program_address([b'\3', b'PAYER', eth_address], evm_loader_id)[0]
+
+def unique(source):
+    res = []
+    [res.append(x) for x in source if x not in res]
+    return res
 
 class TestInteroperability:
 
@@ -37,6 +47,8 @@ class TestInteroperability:
                                                            "getPayer()")
         assert bytes32_to_solana_pubkey(payer) != ""
 
+
+
     def test_execute_compute_budget(self, sender_with_tokens, solana_caller,
                                     neon_api_client, holder_acc, operator_keypair,
                                     evm_loader, treasury_pool, sol_client):
@@ -49,17 +61,6 @@ class TestInteroperability:
         account_bytes = solana_pubkey_to_bytes32(sender_with_tokens.solana_account_address)
         acc_len = 1
 
-        # serialized_instructions = (
-        #         program_id_bytes +
-        #         # ('00' * 32).encode('utf-8') +
-        #         struct.pack('<Q', acc_len).hex().encode('utf-8') +
-        #         account_bytes +
-        #         struct.pack('?', is_signer).hex().encode('utf-8') +
-        #         struct.pack('?', is_writable).hex().encode('utf-8') +
-        #         # +('00' * 32).encode('utf-8') +
-        #         struct.pack('<Q', len(data)).hex().encode('utf-8') +
-        #         data.hex().encode('utf-8')
-        # )
         serialized_instructions = (
             bytes(PublicKey(program_id)) +
             acc_len.to_bytes(8, "little") + 
@@ -106,6 +107,70 @@ class TestInteroperability:
 
 
         check_transaction_logs_have_text(resp.value.transaction.transaction.signatures[0], "exit_status=0x11")
+
+
+
+    def test_execute_transfer(self, sender_with_tokens, solana_caller,
+                                    neon_api_client, operator_keypair,
+                                    evm_loader, treasury_pool):
+
+        instruction = solana_transfer(TransferParams(
+            from_pubkey=find_contract_payer(evm_loader.loader_id, solana_caller.eth_address),
+            to_pubkey=PublicKey('DwLW2XwPd1demetQVrKMaHjb4eiZpwHHxPQNAXWa8Xb6'),
+            lamports=1234511,
+        ))
+        self._execute_instruction(instruction, 1234511, sender_with_tokens, solana_caller,
+                             neon_api_client, operator_keypair, evm_loader, treasury_pool)
+
+
+    def _execute_instruction(self, instruction, required_lamports, sender_with_tokens, solana_caller,
+                             neon_api_client, operator_keypair, evm_loader, treasury_pool):
+        serialized_instructions = (
+            bytes(instruction.program_id) +
+            len(instruction.keys).to_bytes(8, "little") +
+            b"".join(
+                bytes(acc.pubkey) + (acc.is_signer).to_bytes(1, "little") + (acc.is_writable).to_bytes(1, "little")
+                for acc in instruction.keys
+            ) +
+            len(instruction.data).to_bytes(8, "little") +
+            instruction.data
+        )
+        print("serialised instructions", serialized_instructions.hex().encode('utf-8'))
+
+        additional_keys = unique(
+            [
+                sender_with_tokens.balance_account_address,
+                solana_caller.balance_account_address,
+                solana_caller.solana_address,
+                find_contract_payer(evm_loader.loader_id, solana_caller.eth_address),
+                PublicKey('11111111111111111111111111111111'),
+                PublicKey("83fAnx3LLG612mHbEh4HzXEpYwvSB5fqpwUS3sZkRuUB"),   # contract account for 0xFF00...0006
+                instruction.program_id,
+            ] + [acc.pubkey for acc in instruction.keys]
+        )
+
+        signed_tx = make_contract_call_trx(sender_with_tokens, solana_caller, "execute(uint64,bytes)",
+                                           [required_lamports, serialized_instructions])
+        
+        func_name = abi.function_signature_to_4byte_selector('execute(uint64,bytes)')
+        data = func_name + eth_abi.encode(['uint64', 'bytes'], [required_lamports, serialized_instructions])
+
+        result = neon_api_client.emulate(sender_with_tokens.eth_address.hex(),
+                                         contract=solana_caller.eth_address.hex(), data=data)
+        # it works
+        # result = neon_api_client.emulate(sender_with_tokens.eth_address.hex(),
+        #                                  contract="0xFF00000000000000000000000000000000000006", data=data)
+        print("emulation response:", result)
+
+        resp = execute_trx_from_instruction_with_solana_call(operator_keypair, evm_loader, treasury_pool.account,
+                                                              treasury_pool.buffer,
+                                                              signed_tx,
+                                                              additional_keys,
+                                                              operator_keypair)
+
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+
+
 
     def test_execute_call_memo(self, sender_with_tokens, neon_api_client, operator_keypair,
                                evm_loader, treasury_pool, sol_client):
