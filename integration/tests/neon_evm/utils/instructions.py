@@ -1,4 +1,3 @@
-import struct
 import typing as tp
 
 from eth_keys import keys as eth_keys
