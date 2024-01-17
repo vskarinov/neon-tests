@@ -1,3 +1,4 @@
+import struct
 import typing as tp
 
 from eth_keys import keys as eth_keys
@@ -6,6 +7,7 @@ from solana.publickey import PublicKey
 import solana.system_program as sp
 from solana.transaction import AccountMeta, TransactionInstruction, Transaction
 
+from utils.helpers import solana_pubkey_to_bytes32
 from .constants import EVM_LOADER
 from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
@@ -26,7 +28,7 @@ class ComputeBudget:
         return TransactionInstruction(
             program_id=COMPUTE_BUDGET_ID,
             keys=[AccountMeta(PublicKey(operator.public_key), is_signer=True, is_writable=False)],
-            data=bytes.fromhex("02") + units.to_bytes(4, "little")  #  + additional_fee.to_bytes(4, "little")
+            data=bytes.fromhex("02") + units.to_bytes(4, "little"),  #  + additional_fee.to_bytes(4, "little")
         )
 
     @staticmethod
@@ -34,17 +36,20 @@ class ComputeBudget:
         return TransactionInstruction(
             program_id=COMPUTE_BUDGET_ID,
             keys=[AccountMeta(PublicKey(operator.public_key), is_signer=True, is_writable=False)],
-            data=bytes.fromhex("01") + heap_frame.to_bytes(4, "little")
+            data=bytes.fromhex("01") + heap_frame.to_bytes(4, "little"),
         )
 
 
 class TransactionWithComputeBudget(Transaction):
-    def __init__(self,
-                 operator: Keypair,
-                 units=DEFAULT_UNITS,
-                 additional_fee=DEFAULT_ADDITIONAL_FEE,
-                 heap_frame=DEFAULT_HEAP_FRAME,
-                 *args, **kwargs):
+    def __init__(
+        self,
+        operator: Keypair,
+        units=DEFAULT_UNITS,
+        additional_fee=DEFAULT_ADDITIONAL_FEE,
+        heap_frame=DEFAULT_HEAP_FRAME,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         if units:
             self.add(ComputeBudget.request_units(operator, units, additional_fee))
@@ -53,13 +58,8 @@ class TransactionWithComputeBudget(Transaction):
 
 
 def write_holder_layout(hash: bytes, offset: int, data: bytes):
-    assert (len(hash) == 32)
-    return (
-            bytes([0x26])
-            + hash
-            + offset.to_bytes(8, byteorder="little")
-            + data
-    )
+    assert len(hash) == 32
+    return bytes([0x26]) + hash + offset.to_bytes(8, byteorder="little") + data
 
 
 def make_WriteHolder(operator: PublicKey, holder_account: PublicKey, hash: bytes, offset: int, payload: bytes):
@@ -71,17 +71,19 @@ def make_WriteHolder(operator: PublicKey, holder_account: PublicKey, hash: bytes
         keys=[
             AccountMeta(pubkey=holder_account, is_signer=False, is_writable=True),
             AccountMeta(pubkey=operator, is_signer=True, is_writable=False),
-        ])
+        ],
+    )
 
 
 def make_ExecuteTrxFromInstruction(
-        operator: Keypair,
-        evm_loader: "EvmLoader",
-        treasury_address: PublicKey,
-        treasury_buffer: bytes,
-        message: bytes,
-        additional_accounts: tp.List[PublicKey],
-        system_program=sp.SYS_PROGRAM_ID, tag=0x32
+    operator: Keypair,
+    evm_loader: "EvmLoader",
+    treasury_address: PublicKey,
+    treasury_buffer: bytes,
+    message: bytes,
+    additional_accounts: tp.List[PublicKey],
+    system_program=sp.SYS_PROGRAM_ID,
+    tag=0x32,
 ):
     data = bytes([tag]) + treasury_buffer + message
     operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
@@ -98,23 +100,23 @@ def make_ExecuteTrxFromInstruction(
     ]
     for acc in additional_accounts:
         print("Additional acc ", acc)
-        accounts.append(AccountMeta(acc, is_signer=False, is_writable=True), )
+        accounts.append(
+            AccountMeta(acc, is_signer=False, is_writable=True),
+        )
 
-    return TransactionInstruction(
-        program_id=PublicKey(EVM_LOADER),
-        data=data,
-        keys=accounts
-    )
+    return TransactionInstruction(program_id=PublicKey(EVM_LOADER), data=data, keys=accounts)
+
 
 def make_ExecuteTrxFromAccount(
-        operator: Keypair,
-        evm_loader: "EvmLoader",
-        holder_address: PublicKey,
-        treasury_address: PublicKey,
-        treasury_buffer: bytes,
-        message: bytes,
-        additional_accounts: tp.List[PublicKey],
-        system_program=sp.SYS_PROGRAM_ID, tag=0x33
+    operator: Keypair,
+    evm_loader: "EvmLoader",
+    holder_address: PublicKey,
+    treasury_address: PublicKey,
+    treasury_buffer: bytes,
+    message: bytes,
+    additional_accounts: tp.List[PublicKey],
+    system_program=sp.SYS_PROGRAM_ID,
+    tag=0x33,
 ):
     data = bytes([tag]) + treasury_buffer + message
     operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
@@ -132,25 +134,24 @@ def make_ExecuteTrxFromAccount(
     ]
     for acc in additional_accounts:
         print("Additional acc ", acc)
-        accounts.append(AccountMeta(acc, is_signer=False, is_writable=True), )
+        accounts.append(
+            AccountMeta(acc, is_signer=False, is_writable=True),
+        )
 
-    return TransactionInstruction(
-        program_id=PublicKey(EVM_LOADER),
-        data=data,
-        keys=accounts
-    )
+    return TransactionInstruction(program_id=PublicKey(EVM_LOADER), data=data, keys=accounts)
 
 
 def make_ExecuteTrxFromAccountDataIterativeOrContinue(
-        index: int,
-        step_count: int,
-        operator: Keypair,
-        evm_loader: "EvmLoader",
-        holder_address: PublicKey,
-        treasury: TreasuryPool,
-        additional_accounts: tp.List[PublicKey],
-        sys_program_id=sp.SYS_PROGRAM_ID,
-        tag=0x35):
+    index: int,
+    step_count: int,
+    operator: Keypair,
+    evm_loader: "EvmLoader",
+    holder_address: PublicKey,
+    treasury: TreasuryPool,
+    additional_accounts: tp.List[PublicKey],
+    sys_program_id=sp.SYS_PROGRAM_ID,
+    tag=0x35,
+):
     # 0x35 - TransactionStepFromAccount
     # 0x36 - TransactionStepFromAccountNoChainId
     data = tag.to_bytes(1, "little") + treasury.buffer + step_count.to_bytes(4, "little") + index.to_bytes(4, "little")
@@ -171,25 +172,25 @@ def make_ExecuteTrxFromAccountDataIterativeOrContinue(
 
     for acc in additional_accounts:
         print("Additional acc ", acc)
-        accounts.append(AccountMeta(acc, is_signer=False, is_writable=True), )
+        accounts.append(
+            AccountMeta(acc, is_signer=False, is_writable=True),
+        )
 
-    return TransactionInstruction(
-        program_id=PublicKey(EVM_LOADER),
-        data=data,
-        keys=accounts
-    )
+    return TransactionInstruction(program_id=PublicKey(EVM_LOADER), data=data, keys=accounts)
 
 
 def make_PartialCallOrContinueFromRawEthereumTX(
-        index: int,
-        step_count: int,
-        instruction: bytes,
-        operator: Keypair,
-        evm_loader: "EvmLoader",
-        storage_address: PublicKey,
-        treasury: TreasuryPool,
-        additional_accounts: tp.List[PublicKey],
-        system_program=sp.SYS_PROGRAM_ID, tag=0x34):
+    index: int,
+    step_count: int,
+    instruction: bytes,
+    operator: Keypair,
+    evm_loader: "EvmLoader",
+    storage_address: PublicKey,
+    treasury: TreasuryPool,
+    additional_accounts: tp.List[PublicKey],
+    system_program=sp.SYS_PROGRAM_ID,
+    tag=0x34,
+):
     data = bytes([tag]) + treasury.buffer + step_count.to_bytes(4, "little") + index.to_bytes(4, "little") + instruction
     operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
 
@@ -201,16 +202,20 @@ def make_PartialCallOrContinueFromRawEthereumTX(
         AccountMeta(system_program, is_signer=False, is_writable=True),
     ]
     for acc in additional_accounts:
-        accounts.append(AccountMeta(acc, is_signer=False, is_writable=True), )
+        accounts.append(
+            AccountMeta(acc, is_signer=False, is_writable=True),
+        )
 
-    return TransactionInstruction(
-        program_id=PublicKey(EVM_LOADER),
-        data=data,
-        keys=accounts
-    )
+    return TransactionInstruction(program_id=PublicKey(EVM_LOADER), data=data, keys=accounts)
 
 
-def make_Cancel(evm_loader: "EvmLoader", storage_address: PublicKey, operator: Keypair, hash: bytes, additional_accounts: tp.List[PublicKey]):
+def make_Cancel(
+    evm_loader: "EvmLoader",
+    storage_address: PublicKey,
+    operator: Keypair,
+    hash: bytes,
+    additional_accounts: tp.List[PublicKey],
+):
     data = bytes([0x37]) + hash
     operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
 
@@ -221,27 +226,25 @@ def make_Cancel(evm_loader: "EvmLoader", storage_address: PublicKey, operator: K
     ]
 
     for acc in additional_accounts:
-        accounts.append(AccountMeta(acc, is_signer=False, is_writable=True), )
+        accounts.append(
+            AccountMeta(acc, is_signer=False, is_writable=True),
+        )
 
-    return TransactionInstruction(
-        program_id=PublicKey(EVM_LOADER),
-        data=data,
-        keys=accounts
-    )
+    return TransactionInstruction(program_id=PublicKey(EVM_LOADER), data=data, keys=accounts)
 
 
 def make_DepositV03(
-        ether_address: bytes,
-        chain_id: int,
-        balance_account: PublicKey,
-        contract_account: PublicKey,
-        mint: PublicKey,
-        source: PublicKey,
-        pool: PublicKey,
-        token_program: PublicKey,
-        operator_pubkey: PublicKey,
+    ether_address: bytes,
+    chain_id: int,
+    balance_account: PublicKey,
+    contract_account: PublicKey,
+    mint: PublicKey,
+    source: PublicKey,
+    pool: PublicKey,
+    token_program: PublicKey,
+    operator_pubkey: PublicKey,
 ) -> TransactionInstruction:
-    data = bytes([0x31]) + ether_address + chain_id.to_bytes(8, 'little')
+    data = bytes([0x31]) + ether_address + chain_id.to_bytes(8, "little")
 
     accounts = [
         AccountMeta(pubkey=mint, is_signer=False, is_writable=True),
@@ -255,6 +258,7 @@ def make_DepositV03(
     ]
 
     return TransactionInstruction(program_id=PublicKey(EVM_LOADER), data=data, keys=accounts)
+
 
 def make_CreateAssociatedTokenIdempotent(payer: PublicKey, owner: PublicKey, mint: PublicKey) -> TransactionInstruction:
     """Creates a transaction instruction to create an associated token account.
@@ -276,3 +280,16 @@ def make_CreateAssociatedTokenIdempotent(payer: PublicKey, owner: PublicKey, min
         ],
         program_id=ASSOCIATED_TOKEN_PROGRAM_ID,
     )
+
+
+def serialize_instruction(program_id, instruction) -> bytes:
+    program_id_bytes = solana_pubkey_to_bytes32(PublicKey(program_id))
+    serialized = program_id_bytes + len(instruction.keys).to_bytes(8, "little")
+
+    for key in instruction.keys:
+        serialized += bytes(key.pubkey)
+        serialized += key.is_signer.to_bytes(1, "little")
+        serialized += key.is_writable.to_bytes(1, "little")
+
+    serialized += len(instruction.data).to_bytes(8, "little") + instruction.data
+    return serialized

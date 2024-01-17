@@ -129,4 +129,4 @@ def bytes32_to_solana_pubkey(bytes32_data):
 
 def solana_pubkey_to_bytes32(solana_pubkey):
     byte_data = base58.b58decode(str(solana_pubkey))
-    return byte_data.hex().encode('utf-8')
+    return byte_data
