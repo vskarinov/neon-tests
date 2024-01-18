@@ -163,7 +163,6 @@ class TestInteroperability:
             holder_acc,
             treasury_pool.account,
             treasury_pool.buffer,
-            signed_tx,
             accounts,
             operator_keypair,
         )

@@ -112,12 +112,11 @@ def make_ExecuteTrxFromAccount(
     holder_address: PublicKey,
     treasury_address: PublicKey,
     treasury_buffer: bytes,
-    message: bytes,
     additional_accounts: tp.List[PublicKey],
     system_program=sp.SYS_PROGRAM_ID,
     tag=0x33,
 ):
-    data = bytes([tag]) + treasury_buffer + message
+    data = bytes([tag]) + treasury_buffer
     operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
     print("make_ExecuteTrxFromInstruction accounts")
     print("Operator: ", operator.public_key)
@@ -188,7 +187,7 @@ def make_PartialCallOrContinueFromRawEthereumTX(
     treasury: TreasuryPool,
     additional_accounts: tp.List[PublicKey],
     system_program=sp.SYS_PROGRAM_ID,
-    tag=0x34,
+    tag=0x34, #TransactionStepFromInstruction
 ):
     data = bytes([tag]) + treasury.buffer + step_count.to_bytes(4, "little") + index.to_bytes(4, "little") + instruction
     operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()

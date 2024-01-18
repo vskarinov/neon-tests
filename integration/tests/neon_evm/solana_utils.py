@@ -520,12 +520,11 @@ def execute_trx_from_instruction_with_solana_call(operator: Keypair, evm_loader:
 
 def execute_trx_from_account_with_solana_call(operator: Keypair, evm_loader: EvmLoader, holder_address,
                                               treasury_address: PublicKey, treasury_buffer: bytes,
-                                              instruction: SignedTransaction,
                                               additional_accounts, signer: Keypair,
                                               system_program=sp.SYS_PROGRAM_ID) -> SendTransactionResp:
     trx = TransactionWithComputeBudget(operator)
     trx.add(make_ExecuteTrxFromAccount(operator, evm_loader, holder_address, treasury_address,
-                                       treasury_buffer, instruction.rawTransaction, additional_accounts,
+                                       treasury_buffer, additional_accounts,
                                        system_program, tag=0x39))
     return solana_client.send_transaction(trx, signer, opts=TxOpts(skip_preflight=False,
                                                                    skip_confirmation=False,
