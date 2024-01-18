@@ -1,13 +1,18 @@
 import eth_abi
 import pytest
 
-from eth_utils import abi
+from eth_utils import abi, keccak
 from solana.keypair import Keypair
 
 from solana.transaction import TransactionInstruction, AccountMeta
-from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
+from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID
 
-from integration.tests.neon_evm.solana_utils import EvmLoader, execute_trx_from_instruction_with_solana_call
+from integration.tests.neon_evm.solana_utils import (
+    EvmLoader,
+    execute_trx_from_instruction_with_solana_call,
+    execute_trx_from_account_with_solana_call,
+    write_transaction_to_holder_account,
+)
 from integration.tests.neon_evm.types.types import Contract, Caller
 from integration.tests.neon_evm.utils.constants import (
     COMPUTE_BUDGET_ID,
@@ -22,6 +27,7 @@ from integration.tests.neon_evm.utils.transaction_checks import check_transactio
 
 from utils.helpers import bytes32_to_solana_pubkey
 from utils.instructions import DEFAULT_UNITS
+from utils.metaplex import ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
 
 
 class TestInteroperability:
@@ -44,12 +50,11 @@ class TestInteroperability:
         payer = neon_api_client.call_contract_get_function(sender_with_tokens, solana_caller, "getPayer()")
         assert bytes32_to_solana_pubkey(payer) != ""
 
-    def test_execute_compute_budget(
+    def test_execute_from_instruction_for_compute_budget(
         self,
         sender_with_tokens,
         solana_caller,
         neon_api_client,
-        holder_acc,
         operator_keypair,
         evm_loader,
         treasury_pool,
@@ -83,7 +88,7 @@ class TestInteroperability:
         )
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
 
-    def test_execute_call_memo(
+    def test_execute_from_instruction_for_call_memo(
         self, sender_with_tokens, neon_api_client, operator_keypair, evm_loader, treasury_pool, sol_client
     ):
         contract = deploy_contract(
@@ -116,8 +121,7 @@ class TestInteroperability:
 
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
 
-    @pytest.mark.skip(reason="In progress")
-    def test_execute_create_acc(
+    def test_execute_from_account_for_create_acc(
         self,
         sender_with_tokens,
         solana_caller,
@@ -135,33 +139,32 @@ class TestInteroperability:
         )
         serialized_instruction = serialize_instruction(ASSOCIATED_TOKEN_PROGRAM_ID, instruction)
 
-        signed_tx = make_contract_call_trx(
-            sender_with_tokens, solana_caller, "execute(uint64,bytes)", [500000, serialized_instruction]
+        execute_params = [(2039280, serialized_instruction)]
+        calldata = keccak(text="batchExecute((uint64,bytes)[])")[:4] + eth_abi.encode(
+            ["(uint64,bytes)[]"],
+            [execute_params],
         )
 
-        func_name = abi.function_signature_to_4byte_selector("execute(uint64,bytes)")
-        data = func_name + eth_abi.encode(["uint64", "bytes"], [500000, serialized_instruction])
+        signed_tx = make_eth_transaction(solana_caller.eth_address, calldata, sender_with_tokens)
 
-        result = neon_api_client.emulate(
-            sender_with_tokens.eth_address.hex(), contract=solana_caller.eth_address.hex(), data=data
-        )
+        write_transaction_to_holder_account(signed_tx, holder_acc, operator_keypair)
 
-        print("emulation response:", result)
-
-        resp = execute_trx_from_instruction_with_solana_call(
+        accounts = [
+            sender_with_tokens.balance_account_address,
+            sender_with_tokens.solana_account_address,
+            solana_caller.balance_account_address,
+            solana_caller.solana_address,
+            SOLANA_CALL_PRECOMPILED_ID,
+            ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+        ] + [acc.pubkey for acc in instruction.keys]
+        resp = execute_trx_from_account_with_solana_call(
             operator_keypair,
             evm_loader,
+            holder_acc,
             treasury_pool.account,
             treasury_pool.buffer,
             signed_tx,
-            [
-                sender_with_tokens.balance_account_address,
-                sender_with_tokens.solana_account_address,
-                SOLANA_CALL_PRECOMPILED_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID,
-                solana_caller.balance_account_address,
-                solana_caller.solana_address,
-            ],
+            accounts,
             operator_keypair,
         )
 
