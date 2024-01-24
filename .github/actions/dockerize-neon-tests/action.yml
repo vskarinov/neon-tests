@@ -29,7 +29,7 @@ runs:
         image_id="neonlabsorg/neon_tests"
         delimeter=$(printf "%0.s-" {1..30})
         echo " ${delimeter} Build new docker image ${image_id} ${delimeter}"
-        docker build . --no-cache --tag ${image_id}:${{ inputs.image_tag }} --build-arg OZ_BRANCH='${{ inputs.oz_branch }}'
+        docker build . --no-cache --tag ${image_id}:${{ inputs.image_tag }} --build-arg OZ_BRANCH='${{ inputs.oz_branch }}' --build-arg CONTRACTS_BRANCH='${{ inputs.branch_tag }}'
         if [[ "${{ inputs.branch_tag }}" != ''  ]]; then
           docker tag ${image_id}:${{ inputs.image_tag }} ${image_id}:${{ inputs.branch_tag }}
         fi;

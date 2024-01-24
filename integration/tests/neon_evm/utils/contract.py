@@ -33,9 +33,11 @@ def get_contract_bin(
     if version not in [str(v) for v in solcx.get_installed_solc_versions()]:
         solcx.install_solc(version)
 
-    contract_path = (pathlib.Path.cwd() / "contracts" / "neon_evm" / f"{contract}").absolute()
+    contract_path = (pathlib.Path.cwd() / "contracts" / "neon_evm" / contract).absolute()
     if not contract_path.exists():
-        contract_path =  (pathlib.Path.cwd() / "contracts" / "external" / f"{contract}").absolute()
+        contract_path = (pathlib.Path.cwd() / "contracts" / contract).absolute()
+    if not contract_path.exists():
+        contract_path =  (pathlib.Path.cwd() / "contracts" / "external" / contract).absolute()
 
     assert contract_path.exists(), f"Can't found contract: {contract_path}"
 
@@ -83,17 +85,23 @@ def make_deployment_transaction(
 
     return w3.eth.account.sign_transaction(tx, user.solana_account.secret_key[:32])
 
+def get_abi_type(value):
+    if isinstance(value, int):
+        return 'uint256'
+    if isinstance(value, str):
+        return 'string'
+    if isinstance(value, bytes):
+        return 'bytes'
+    raise ValueError(f"Can't get abi type for {value} of type {type(value)}")
 
 def make_contract_call_trx(user, contract, function_signature, params=None, value=0, chain_id=111, access_list=None,
                            trx_type=None):
+    #does not work for tuple in params
     data = abi.function_signature_to_4byte_selector(function_signature)
 
     if params is not None:
-        for param in params:
-            if isinstance(param, int):
-                data += eth_abi.encode(['uint256'], [param])
-            elif isinstance(param, str):
-                data += eth_abi.encode(['string'], [param])
+        types = [get_abi_type(param) for param in params]
+        data += eth_abi.encode(types, params)
 
     signed_tx = make_eth_transaction(contract.eth_address, data, user, value=value, 
                                      chain_id=chain_id, access_list=access_list, type=trx_type)
