@@ -112,7 +112,7 @@ class TestEconomics:
         token_balance_before = operator.get_token_balance(w3_client)
 
         instruction_tx = w3_client.make_raw_tx(
-            account_with_all_tokens.address, acc2.address, web3.Web3.to_wei(0.1, "ether")
+            account_with_all_tokens.address, acc2.address, web3.Web3.to_wei(0.1, "ether"), estimate_gas=True
         )
         instruction_tx.pop("chainId")
 
