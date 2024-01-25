@@ -371,7 +371,7 @@ def requirements(dep):
 
 def is_neon_evm_branch_exist(branch):
     if branch:
-        response = requests.get(f"{NEON_EVM_GITHUB_URL}/branches/{branch}").json()
+        response = requests.get(f"{NEON_EVM_GITHUB_URL}/branches/{branch}")
         if response.status_code == 200:
             click.echo(f"The branch {branch} exist in the neon_evm repository")
             return True
