@@ -328,7 +328,8 @@ class TestEconomics:
 
         sol_balance_after_deploy = operator.get_solana_balance()
         token_balance_after_deploy = operator.get_token_balance(w3_client)
-        tx = w3_client.make_raw_tx(account_with_all_tokens.address)
+        tx = w3_client.make_raw_tx(account_with_all_tokens.address, gas=0)
+
         inc_tx = contract.functions.inc().build_transaction(tx)
 
         assert contract.functions.get().call() == 0
@@ -434,7 +435,8 @@ class TestEconomics:
 
         sol_balance_before = operator.get_solana_balance()
         token_balance_before = operator.get_token_balance(w3_client)
-        tx = w3_client.make_raw_tx(account_with_all_tokens.address)
+        tx = w3_client.make_raw_tx(account_with_all_tokens.address, gas=0)
+
         instruction_tx = counter_contract.functions.moreInstruction(0, 100).build_transaction(tx)  # 1086 steps in evm
         instruction_receipt = w3_client.send_transaction(account_with_all_tokens, instruction_tx)
 
@@ -457,7 +459,8 @@ class TestEconomics:
 
         sol_balance_before = operator.get_solana_balance()
         token_balance_before = operator.get_token_balance(w3_client)
-        tx = w3_client.make_raw_tx(account_with_all_tokens.address)
+        tx = w3_client.make_raw_tx(account_with_all_tokens.address, gas=0)
+
         instruction_tx = counter_contract.functions.moreInstruction(0, 1500).build_transaction(tx)
 
         instruction_receipt = w3_client.send_transaction(account_with_all_tokens, instruction_tx)
@@ -507,7 +510,8 @@ class TestEconomics:
         sol_balance_before = operator.get_solana_balance()
         token_balance_before = operator.get_token_balance(w3_client)
 
-        tx = w3_client.make_raw_tx(acc2.address)
+        tx = w3_client.make_raw_tx(acc2.address, gas=0)
+
         instruction_tx = counter_contract.functions.moreInstruction(0, 1500).build_transaction(tx)
         with pytest.raises(ValueError, match=INSUFFICIENT_FUNDS_ERROR):
             w3_client.send_transaction(acc2, instruction_tx)
@@ -526,7 +530,8 @@ class TestEconomics:
         sol_balance_before = operator.get_solana_balance()
         token_balance_before = operator.get_token_balance(w3_client)
 
-        tx = w3_client.make_raw_tx(account_with_all_tokens.address)
+        tx = w3_client.make_raw_tx(account_with_all_tokens.address, gas=0)
+
         instruction_tx = counter_contract.functions.bigString(BIG_STRING).build_transaction(tx)
 
         instruction_receipt = w3_client.send_transaction(account_with_all_tokens, instruction_tx)
@@ -719,7 +724,8 @@ class TestEconomics:
         sol_balance_after_deploy = operator.get_solana_balance()
         token_balance_after_deploy = operator.get_token_balance(w3_client)
 
-        tx = w3_client.make_raw_tx(account_with_all_tokens.address)
+        tx = w3_client.make_raw_tx(account_with_all_tokens.address, gas=0)
+
         instr = contract.functions.fill(accounts_quantity).build_transaction(tx)
         receipt = w3_client.send_transaction(account_with_all_tokens, instr)
         block = int(receipt["blockNumber"])
@@ -771,7 +777,7 @@ class TestEconomics:
         sol_balance_before = operator.get_solana_balance()
         token_balance_before = operator.get_token_balance(w3_client)
 
-        tx = w3_client.make_raw_tx(account_with_all_tokens.address)
+        tx = w3_client.make_raw_tx(account_with_all_tokens.address, gas=0)
 
         instruction_tx = contract.functions.replaceValues(value).build_transaction(tx)
         receipt = w3_client.send_transaction(account_with_all_tokens, instruction_tx)
