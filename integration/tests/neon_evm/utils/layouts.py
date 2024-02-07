@@ -48,3 +48,7 @@ BALANCE_ACCOUNT_LAYOUT = Struct(
     "trx_count" / Int64ul,
     "balance" / Bytes(32),
 )
+
+COUNTER_ACCOUNT_LAYOUT = Struct(
+    "count" / Int64ul,
+)
