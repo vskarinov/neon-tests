@@ -32,7 +32,7 @@ from utils.metaplex import ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
 class TestInteroperability:
     @pytest.fixture(scope="function")
     def solana_caller(
-        self, evm_loader: EvmLoader, operator_keypair: Keypair, session_user: Caller, treasury_pool, holder_acc
+            self, evm_loader: EvmLoader, operator_keypair: Keypair, session_user: Caller, treasury_pool, holder_acc
     ) -> SolanaCaller:
         return SolanaCaller(operator_keypair, session_user, evm_loader, treasury_pool, holder_acc)
 
@@ -43,11 +43,17 @@ class TestInteroperability:
     def test_get_payer(self, solana_caller):
         assert solana_caller.get_payer() != ""
 
+    def test_get_solana_PDA(self, solana_caller):
+        addr = solana_caller.get_solana_PDA(COUNTER_ID, b"123")
+        assert addr != ""
+
+    def test_get_eth_ext_authority(self, solana_caller):
+        addr = solana_caller.get_eth_ext_authority(b"123")
+        assert addr != ""
+
     def test_create_resource(self, sender_with_tokens, solana_caller):
         salt = b"123"
-        resource_address = solana_caller.get_resource_address(salt, sender_with_tokens)
-        print("resource_address", resource_address)
-        solana_caller.create_resource(sender_with_tokens, salt, 8, 1000000000, MEMO_PROGRAM_ID)
+        resource_address = solana_caller.create_resource(sender_with_tokens, salt, 8, 1000000000, MEMO_PROGRAM_ID)
         acc_info = solana_client.get_account_info(resource_address, commitment=Confirmed)
         assert acc_info.value is not None
 
@@ -61,7 +67,7 @@ class TestInteroperability:
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
 
     def test_execute_from_instruction_for_call_memo(
-        self, sender_with_tokens, neon_api_client, operator_keypair, evm_loader, treasury_pool, sol_client
+            self, sender_with_tokens, neon_api_client, operator_keypair, evm_loader, treasury_pool, sol_client
     ):
         contract = deploy_contract(
             operator_keypair,

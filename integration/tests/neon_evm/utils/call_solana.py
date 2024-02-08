@@ -13,6 +13,7 @@ from integration.tests.neon_evm.utils.instructions import serialize_instruction
 from integration.tests.neon_evm.utils.neon_api_client import NeonApiClient
 from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text
 from utils.helpers import bytes32_to_solana_pubkey
+from utils.metaplex import SYSTEM_PROGRAM_ID
 
 
 class SolanaCaller:
@@ -45,6 +46,20 @@ class SolanaCaller:
             self.owner, self.contract, "getNeonAddress(address)", args
         )
         return bytes32_to_solana_pubkey(sol_addr)
+
+    def get_solana_PDA(self, program_id, seeds):
+        args = eth_abi.encode(["bytes32", "bytes"], [bytes(program_id), seeds])
+        addr = self.neon_api_client.call_contract_get_function(
+            self.owner, self.contract, "getSolanaPDA(bytes32,bytes)", args
+        )
+        return bytes32_to_solana_pubkey(addr)
+
+    def get_eth_ext_authority(self, salt):
+        args = eth_abi.encode(["bytes32"], [salt])
+        addr = self.neon_api_client.call_contract_get_function(
+            self.owner, self.contract, "getExtAuthority(bytes32)", args
+        )
+        return bytes32_to_solana_pubkey(addr)
 
     def execute(self, program_id, instruction, lamports=0, sender=None, additional_accounts=None):
         sender = self.owner if sender is None else sender
@@ -119,21 +134,10 @@ class SolanaCaller:
 
     def create_resource(self, sender, salt, space, lamports, owner):
         signed_tx = make_contract_call_trx(
-            sender, self.contract, "createResource(bytes32,uint64,uint64,bytes32)", [salt, space, lamports, str(owner)]
+            sender, self.contract, "createResource(bytes32,uint64,uint64,bytes32)", [salt, space, lamports, bytes(owner)]
         )
         write_transaction_to_holder_account(signed_tx, self.holder_acc, self.operator_keypair)
         resource_address_pubkey = self.get_resource_address(salt, sender)
-        print(resource_address_pubkey)
-
-        # emulation
-        func_name = abi.function_signature_to_4byte_selector("createResource(bytes32,uint64,uint64,bytes32)")
-        data = func_name + eth_abi.encode(
-            ["bytes32", "uint64", "uint64", "bytes32"], [salt, space, lamports, bytes(owner)]
-        )
-        result = self.neon_api_client.emulate(
-            sender.eth_address.hex(), contract=self.contract.eth_address.hex(), data=data
-        )
-        print("emulation response:", result)
 
         resp = execute_trx_from_account_with_solana_call(
             self.operator_keypair,
@@ -147,10 +151,14 @@ class SolanaCaller:
                 sender.balance_account_address,
                 sender.solana_account_address,
                 SOLANA_CALL_PRECOMPILED_ID,
+                resource_address_pubkey,
+                SYSTEM_PROGRAM_ID
+
             ],
             self.operator_keypair,
         )
-        check_transaction_logs_have_text(resp.value.transaction.transaction.signatures[0], "exit_status=0x11")
+        check_transaction_logs_have_text(resp.value, "exit_status=0x12")
+        return resource_address_pubkey
 
     @staticmethod
     def _get_all_pubkeys_from_instructions(instructions):

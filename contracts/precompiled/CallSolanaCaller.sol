@@ -44,4 +44,18 @@ contract CallSolanaCaller {
         bytes32 resource = _callSolana.getResourceAddress(salt);
         return resource;
     }
+
+    function getSolanaPDA(bytes32 program_id, bytes memory seeds) external returns (bytes32){
+        bytes32 pda = _callSolana.getSolanaPDA(program_id, seeds);
+        return pda;
+    }
+
+    function getExtAuthority(bytes32 salt) external returns (bytes32){
+        bytes32 authority = _callSolana.getExtAuthority(salt);
+        return authority;
+    }
+
+    function executeWithSeed(uint64 lamports, bytes32 salt, bytes calldata instruction) public {
+        _callSolana.executeWithSeed(lamports, salt, instruction);
+    }
 }

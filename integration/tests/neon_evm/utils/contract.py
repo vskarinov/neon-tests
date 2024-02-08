@@ -18,8 +18,8 @@ from web3.auto import w3
 
 
 def get_contract_bin(
-    contract: str,
-    contract_name: tp.Optional[str] = None,
+        contract: str,
+        contract_name: tp.Optional[str] = None,
 ):
     version = '0.7.6'
     if not contract.endswith(".sol"):
@@ -37,7 +37,7 @@ def get_contract_bin(
     if not contract_path.exists():
         contract_path = (pathlib.Path.cwd() / "contracts" / contract).absolute()
     if not contract_path.exists():
-        contract_path =  (pathlib.Path.cwd() / "contracts" / "external" / contract).absolute()
+        contract_path = (pathlib.Path.cwd() / "contracts" / "external" / contract).absolute()
 
     assert contract_path.exists(), f"Can't found contract: {contract_path}"
 
@@ -85,25 +85,17 @@ def make_deployment_transaction(
 
     return w3.eth.account.sign_transaction(tx, user.solana_account.secret_key[:32])
 
-def get_abi_type(value):
-    if isinstance(value, int):
-        return 'uint256'
-    if isinstance(value, str):
-        return 'string'
-    if isinstance(value, bytes):
-        return 'bytes'
-    raise ValueError(f"Can't get abi type for {value} of type {type(value)}")
 
 def make_contract_call_trx(user, contract, function_signature, params=None, value=0, chain_id=111, access_list=None,
                            trx_type=None):
-    #does not work for tuple in params
+    # does not work for tuple in params
     data = abi.function_signature_to_4byte_selector(function_signature)
 
     if params is not None:
-        types = [get_abi_type(param) for param in params]
+        types = function_signature.split("(")[1].split(")")[0].split(",")
         data += eth_abi.encode(types, params)
 
-    signed_tx = make_eth_transaction(contract.eth_address, data, user, value=value, 
+    signed_tx = make_eth_transaction(contract.eth_address, data, user, value=value,
                                      chain_id=chain_id, access_list=access_list, type=trx_type)
     return signed_tx
 
