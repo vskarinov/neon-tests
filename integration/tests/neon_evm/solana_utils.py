@@ -80,6 +80,24 @@ def account_with_seed(base, seed, program) -> PublicKey:
     return PublicKey(sha256(bytes(base) + bytes(seed, 'utf8') + bytes(program)).digest())
 
 
+def create_account(payer, size, owner, account=None, lamports=None):
+    account = account or Keypair.generate()
+    lamports = lamports or solana_client.get_minimum_balance_for_rent_exemption(size).value
+    trx = Transaction()
+    trx.fee_payer=payer.public_key
+    instr = sp.create_account(
+        sp.CreateAccountParams(
+            payer.public_key,
+            account.public_key,
+            lamports,
+            size,
+            owner))
+    solana_client.send_transaction(trx.add(instr), payer, account,
+                                       opts=TxOpts(skip_preflight=False, skip_confirmation=False,
+                                                   preflight_commitment=Confirmed))
+    return account
+
+
 def create_account_with_seed(funding, base, seed, lamports, space, program=PublicKey(EVM_LOADER)):
     created = account_with_seed(base, seed, program)
     print(f"Created: {created}")

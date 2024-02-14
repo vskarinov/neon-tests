@@ -1,15 +1,22 @@
+import time
+
 import pytest
 
 from eth_utils import abi
+from solana import system_program
 from solana.keypair import Keypair
+from solana.publickey import PublicKey
 from solana.rpc.commitment import Confirmed
+from solana.rpc.core import RPCException
+from solana.rpc.types import TxOpts
+from solana.system_program import CreateAccountParams
 
-from solana.transaction import TransactionInstruction, AccountMeta
+from solana.transaction import TransactionInstruction, AccountMeta, Transaction
 
 from integration.tests.neon_evm.solana_utils import (
     EvmLoader,
     execute_trx_from_instruction_with_solana_call,
-    solana_client,
+    solana_client, get_solana_account_data, create_account,
 )
 from integration.tests.neon_evm.types.types import Caller
 from integration.tests.neon_evm.utils.call_solana import SolanaCaller
@@ -18,11 +25,12 @@ from integration.tests.neon_evm.utils.constants import (
     MEMO_PROGRAM_ID,
     SOLANA_CALL_PRECOMPILED_ID,
     NEON_TOKEN_MINT_ID,
-    COUNTER_ID,
+    COUNTER_ID, CROSS_PROGRAM_INVOCATION_ID, SYSTEM_ADDRESS, TRANSFER_SOL_ID,
 )
 from integration.tests.neon_evm.utils.contract import deploy_contract
 from integration.tests.neon_evm.utils.ethereum import make_eth_transaction
 from integration.tests.neon_evm.utils.instructions import make_CreateAssociatedTokenIdempotent
+from integration.tests.neon_evm.utils.layouts import COUNTER_ACCOUNT_LAYOUT
 from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text
 
 from utils.instructions import DEFAULT_UNITS
@@ -45,7 +53,7 @@ class TestInteroperability:
 
     def test_get_solana_PDA(self, solana_caller):
         addr = solana_caller.get_solana_PDA(COUNTER_ID, b"123")
-        assert addr != ""
+        assert addr == (PublicKey.find_program_address([b"123"], COUNTER_ID))[0]
 
     def test_get_eth_ext_authority(self, solana_caller):
         addr = solana_caller.get_eth_ext_authority(b"123")
@@ -106,4 +114,125 @@ class TestInteroperability:
         resp = solana_caller.batch_execute(
             [(ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, 2039280, instruction)], sender_with_tokens
         )
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+
+    def test_execute_several_instr_in_one_trx(self, sender_with_tokens, solana_caller):
+        instruction_count = 22
+        resource_addr = solana_caller.create_resource(sender_with_tokens, b"123", 8, 1000000000, COUNTER_ID)
+
+        instruction = TransactionInstruction(
+            program_id=COUNTER_ID,
+            keys=[AccountMeta(resource_addr, is_signer=False, is_writable=True), ],
+            data=bytes([0x1])
+        )
+        call_params = []
+        for i in range(instruction_count):
+            call_params.append((COUNTER_ID, 0, instruction))
+
+        resp = solana_caller.batch_execute(call_params, sender_with_tokens)
+
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+        info: bytes = get_solana_account_data(solana_client, resource_addr, COUNTER_ACCOUNT_LAYOUT.sizeof())
+        layout = COUNTER_ACCOUNT_LAYOUT.parse(info)
+        assert layout.count == instruction_count
+
+    def test_limit_of_simple_instr_in_one_trx(self, sender_with_tokens, solana_caller):
+        instruction_count = 24
+        resource_addr = solana_caller.create_resource(sender_with_tokens, b"123", 8, 1000000000, COUNTER_ID)
+
+        instruction = TransactionInstruction(
+            program_id=COUNTER_ID,
+            keys=[AccountMeta(resource_addr, is_signer=False, is_writable=True), ],
+            data=bytes([0x1])
+        )
+        call_params = []
+        for i in range(instruction_count):
+            call_params.append((COUNTER_ID, 0, instruction))
+
+        with pytest.raises(RPCException, match="failed: exceeded CUs meter at BPF instruction"):
+            solana_caller.batch_execute(call_params, sender_with_tokens)
+    def test_transfer_sol_with_cpi_without_neon(self, solana_caller, operator_keypair, sender_with_tokens):
+        key = Keypair.generate()
+
+        amount = 1
+        recipient = create_account(sender_with_tokens.solana_account, 0, COUNTER_ID)
+
+        instruction = TransactionInstruction(
+            program_id=TRANSFER_SOL_ID,
+            keys=[AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
+                  AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
+                  AccountMeta(PublicKey(SYSTEM_ADDRESS), is_signer=False, is_writable=False),
+                  ],
+            data=bytes([0x0]) + amount.to_bytes(8, "little")
+        )
+        trx = Transaction()
+
+        trx = trx.add(instruction)
+        print("balance")
+        print(solana_client.get_balance(recipient.public_key))
+        a = solana_client.send_transaction(trx, sender_with_tokens.solana_account,
+                                           opts=TxOpts(skip_preflight=False, skip_confirmation=False,
+                                                       preflight_commitment=Confirmed))
+
+        print("balance")
+        print(solana_client.get_balance(key.public_key))
+
+    def test_transfer_sol_without_cpi_without_neon(self, solana_caller, operator_keypair, sender_with_tokens):
+
+        amount = 1
+        sender = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID, lamports=100 * 10 ** 9)
+        recipient = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID)
+        instruction = TransactionInstruction(
+            program_id=TRANSFER_SOL_ID,
+            keys=[AccountMeta(sender.public_key, is_signer=True, is_writable=True),
+                  AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
+                  ],
+            data=bytes([0x1]) + amount.to_bytes(8, "little")
+        )
+        trx = Transaction()
+        trx.fee_payer = sender_with_tokens.solana_account.public_key
+        trx = trx.add(instruction)
+        print("balance")
+        print(solana_client.get_balance(recipient.public_key))
+        a = solana_client.send_transaction(trx, sender_with_tokens.solana_account, sender,
+                                           opts=TxOpts(skip_preflight=False, skip_confirmation=False,
+                                                       preflight_commitment=Confirmed))
+
+        print("balance")
+        print(solana_client.get_balance(recipient.public_key))
+
+    def test_transfer_sol(self, solana_caller, sender_with_tokens):
+        recipient = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID)
+        amount = 1
+        instruction = TransactionInstruction(
+            program_id=TRANSFER_SOL_ID,
+            keys=[AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
+                  AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
+                  AccountMeta(PublicKey(SYSTEM_ADDRESS), is_signer=False, is_writable=False),
+                  ],
+            data=bytes([0x0]) + amount.to_bytes(8, "little")
+        )
+
+        call_params = [(TRANSFER_SOL_ID, 0, instruction)]
+
+        resp = solana_caller.batch_execute(call_params, sender_with_tokens)
+
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+
+    def test_transfer_sol_without_cpi(self, solana_caller, sender_with_tokens):
+        amount = 1
+        payer = solana_caller.get_payer()
+        sender = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID, lamports=100 * 10 ** 9)
+        recipient = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID)
+        instruction = TransactionInstruction(
+            program_id=TRANSFER_SOL_ID,
+            keys=[AccountMeta(sender.public_key, is_signer=True, is_writable=True),
+                  AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
+                  ],
+            data=bytes([0x1]) + amount.to_bytes(8, "little")
+        )
+        call_params = [(TRANSFER_SOL_ID, 0, instruction)]
+
+        resp = solana_caller.batch_execute(call_params, sender_with_tokens, additional_accounts=[payer])
+
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
