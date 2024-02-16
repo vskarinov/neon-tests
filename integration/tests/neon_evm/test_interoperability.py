@@ -1,22 +1,21 @@
-import time
+import random
 
 import pytest
 
 from eth_utils import abi
-from solana import system_program
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
 from solana.rpc.commitment import Confirmed
 from solana.rpc.core import RPCException
 from solana.rpc.types import TxOpts
-from solana.system_program import CreateAccountParams
-
-from solana.transaction import TransactionInstruction, AccountMeta, Transaction
+import spl.token.client
+from solana.transaction import TransactionInstruction, AccountMeta
+from spl.token.instructions import create_associated_token_account, TransferParams, transfer
 
 from integration.tests.neon_evm.solana_utils import (
     EvmLoader,
     execute_trx_from_instruction_with_solana_call,
-    solana_client, get_solana_account_data, create_account,
+    solana_client, get_solana_account_data, create_account, wait_for_account_to_exists,
 )
 from integration.tests.neon_evm.types.types import Caller
 from integration.tests.neon_evm.utils.call_solana import SolanaCaller
@@ -25,7 +24,7 @@ from integration.tests.neon_evm.utils.constants import (
     MEMO_PROGRAM_ID,
     SOLANA_CALL_PRECOMPILED_ID,
     NEON_TOKEN_MINT_ID,
-    COUNTER_ID, CROSS_PROGRAM_INVOCATION_ID, SYSTEM_ADDRESS, TRANSFER_SOL_ID,
+    COUNTER_ID, SYSTEM_ADDRESS, TRANSFER_SOL_ID, TRANSFER_TOKENS_ID,
 )
 from integration.tests.neon_evm.utils.contract import deploy_contract
 from integration.tests.neon_evm.utils.ethereum import make_eth_transaction
@@ -34,7 +33,27 @@ from integration.tests.neon_evm.utils.layouts import COUNTER_ACCOUNT_LAYOUT
 from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text
 
 from utils.instructions import DEFAULT_UNITS
-from utils.metaplex import ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
+from utils.metaplex import ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, TOKEN_PROGRAM_ID
+
+
+def _create_mint_and_accounts(from_wallet, to_wallet, amount):
+    mint = spl.token.client.Token.create_mint(
+        conn=solana_client,
+        payer=from_wallet,
+        mint_authority=from_wallet.public_key,
+        decimals=9,
+        program_id=TOKEN_PROGRAM_ID,
+    )
+    mint.payer = from_wallet
+    from_token_account = mint.create_associated_token_account(from_wallet.public_key)
+    to_token_account = mint.create_associated_token_account(to_wallet.public_key)
+    mint.mint_to(
+        dest=from_token_account,
+        mint_authority=from_wallet,
+        amount=amount,
+        opts=TxOpts(skip_confirmation=False, skip_preflight=True),
+    )
+    return mint, from_token_account, to_token_account
 
 
 class TestInteroperability:
@@ -55,8 +74,8 @@ class TestInteroperability:
         addr = solana_caller.get_solana_PDA(COUNTER_ID, b"123")
         assert addr == (PublicKey.find_program_address([b"123"], COUNTER_ID))[0]
 
-    def test_get_eth_ext_authority(self, solana_caller):
-        addr = solana_caller.get_eth_ext_authority(b"123")
+    def test_get_eth_ext_authority(self, solana_caller, sender_with_tokens):
+        addr = solana_caller.get_eth_ext_authority(b"123", sender_with_tokens)
         assert addr != ""
 
     def test_create_resource(self, sender_with_tokens, solana_caller):
@@ -151,12 +170,10 @@ class TestInteroperability:
 
         with pytest.raises(RPCException, match="failed: exceeded CUs meter at BPF instruction"):
             solana_caller.batch_execute(call_params, sender_with_tokens)
-    def test_transfer_sol_with_cpi_without_neon(self, solana_caller, operator_keypair, sender_with_tokens):
-        key = Keypair.generate()
 
-        amount = 1
-        recipient = create_account(sender_with_tokens.solana_account, 0, COUNTER_ID)
-
+    def test_transfer_sol_with_cpi(self, solana_caller, sender_with_tokens):
+        recipient = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID)
+        amount = random.randint(1, 1000000)
         instruction = TransactionInstruction(
             program_id=TRANSFER_SOL_ID,
             keys=[AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
@@ -165,65 +182,19 @@ class TestInteroperability:
                   ],
             data=bytes([0x0]) + amount.to_bytes(8, "little")
         )
-        trx = Transaction()
-
-        trx = trx.add(instruction)
-        print("balance")
-        print(solana_client.get_balance(recipient.public_key))
-        a = solana_client.send_transaction(trx, sender_with_tokens.solana_account,
-                                           opts=TxOpts(skip_preflight=False, skip_confirmation=False,
-                                                       preflight_commitment=Confirmed))
-
-        print("balance")
-        print(solana_client.get_balance(key.public_key))
-
-    def test_transfer_sol_without_cpi_without_neon(self, solana_caller, operator_keypair, sender_with_tokens):
-
-        amount = 1
-        sender = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID, lamports=100 * 10 ** 9)
-        recipient = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID)
-        instruction = TransactionInstruction(
-            program_id=TRANSFER_SOL_ID,
-            keys=[AccountMeta(sender.public_key, is_signer=True, is_writable=True),
-                  AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
-                  ],
-            data=bytes([0x1]) + amount.to_bytes(8, "little")
-        )
-        trx = Transaction()
-        trx.fee_payer = sender_with_tokens.solana_account.public_key
-        trx = trx.add(instruction)
-        print("balance")
-        print(solana_client.get_balance(recipient.public_key))
-        a = solana_client.send_transaction(trx, sender_with_tokens.solana_account, sender,
-                                           opts=TxOpts(skip_preflight=False, skip_confirmation=False,
-                                                       preflight_commitment=Confirmed))
-
-        print("balance")
-        print(solana_client.get_balance(recipient.public_key))
-
-    def test_transfer_sol(self, solana_caller, sender_with_tokens):
-        recipient = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID)
-        amount = 1
-        instruction = TransactionInstruction(
-            program_id=TRANSFER_SOL_ID,
-            keys=[AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
-                  AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
-                  AccountMeta(PublicKey(SYSTEM_ADDRESS), is_signer=False, is_writable=False),
-                  ],
-            data=bytes([0x0]) + amount.to_bytes(8, "little")
-        )
-
         call_params = [(TRANSFER_SOL_ID, 0, instruction)]
-
-        resp = solana_caller.batch_execute(call_params, sender_with_tokens)
-
+        balance_before = solana_client.get_balance(recipient.public_key).value
+        resp = solana_caller.batch_execute(call_params, sender_with_tokens,
+                                           additional_signers=[sender_with_tokens.solana_account])
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+        balance_after = solana_client.get_balance(recipient.public_key).value
+        assert balance_after == balance_before + amount
 
     def test_transfer_sol_without_cpi(self, solana_caller, sender_with_tokens):
-        amount = 1
-        payer = solana_caller.get_payer()
+        amount = random.randint(1, 1000000)
         sender = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID, lamports=100 * 10 ** 9)
         recipient = create_account(sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID)
+
         instruction = TransactionInstruction(
             program_id=TRANSFER_SOL_ID,
             keys=[AccountMeta(sender.public_key, is_signer=True, is_writable=True),
@@ -232,7 +203,83 @@ class TestInteroperability:
             data=bytes([0x1]) + amount.to_bytes(8, "little")
         )
         call_params = [(TRANSFER_SOL_ID, 0, instruction)]
-
-        resp = solana_caller.batch_execute(call_params, sender_with_tokens, additional_accounts=[payer])
-
+        balance_before = solana_client.get_balance(recipient.public_key).value
+        resp = solana_caller.batch_execute(call_params, sender_with_tokens, additional_signers=[sender])
+        balance_after = solana_client.get_balance(recipient.public_key).value
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+        assert balance_after == balance_before + amount
+
+    def test_transfer_with_PDA_signature(self, solana_caller, sender_with_tokens):
+        from_wallet = Keypair.generate()
+        to_wallet = Keypair.generate()
+        amount = 100000
+        solana_client.request_airdrop(from_wallet.public_key, 1000 * 10 ** 9, commitment=Confirmed)
+        wait_for_account_to_exists(solana_client, from_wallet.public_key)
+
+        mint, from_token_account, to_token_account = _create_mint_and_accounts(from_wallet, to_wallet, amount)
+
+        authority_pubkey = solana_caller.get_solana_PDA(TRANSFER_TOKENS_ID, b"authority")
+        mint.set_authority(from_token_account,
+                           from_wallet,
+                           spl.token.instructions.AuthorityType.ACCOUNT_OWNER,
+                           authority_pubkey,
+                           opts=TxOpts(skip_confirmation=False, skip_preflight=True))
+
+        instruction = TransactionInstruction(
+            program_id=TRANSFER_TOKENS_ID,
+            keys=[AccountMeta(from_token_account, is_signer=False, is_writable=True),
+                  AccountMeta(mint.pubkey, is_signer=False, is_writable=True),
+                  AccountMeta(to_token_account, is_signer=False, is_writable=True),
+                  AccountMeta(authority_pubkey, is_signer=False, is_writable=True),
+                  AccountMeta(PublicKey(TOKEN_PROGRAM_ID), is_signer=False, is_writable=True),
+
+                  ],
+            data=bytes([0x0])
+        )
+
+        resp = solana_caller.execute(TRANSFER_TOKENS_ID, instruction, sender=sender_with_tokens)
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+        assert int(mint.get_balance(to_token_account, commitment=Confirmed).value.amount) == amount
+
+    def test_transfer_tokens_with_ext_authority(self, solana_caller, sender_with_tokens):
+        from_wallet = sender_with_tokens
+        to_wallet = Keypair.generate()
+        amount = 100000
+        mint, from_token_account, to_token_account = _create_mint_and_accounts(from_wallet.solana_account,
+                                                                                    to_wallet, amount)
+        seed = b'myseed'
+        authority = solana_caller.get_eth_ext_authority(seed, from_wallet)
+
+        mint.set_authority(from_token_account,
+                           from_wallet.solana_account,
+                           spl.token.instructions.AuthorityType.ACCOUNT_OWNER,
+                           authority,
+                           opts=TxOpts(skip_confirmation=False, skip_preflight=True))
+
+        instruction = transfer(
+            TransferParams(TOKEN_PROGRAM_ID, from_token_account, to_token_account, authority, amount))
+
+        resp = solana_caller.execute_with_seed(TOKEN_PROGRAM_ID, instruction, seed, sender=from_wallet)
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+
+        assert int(mint.get_balance(to_token_account, commitment=Confirmed).value.amount) == amount
+
+    def test_transfer_tokens_with_unauthorized_signer(self, solana_caller, sender_with_tokens):
+        from_wallet = sender_with_tokens
+        to_wallet = Keypair.generate()
+        amount = 100000
+        mint, from_token_account, to_token_account = _create_mint_and_accounts(from_wallet.solana_account,
+                                                                                    to_wallet, amount)
+
+        authority = solana_caller.get_eth_ext_authority(b'myseed', from_wallet)
+
+        mint.set_authority(from_token_account,
+                           from_wallet.solana_account,
+                           spl.token.instructions.AuthorityType.ACCOUNT_OWNER,
+                           authority,
+                           opts=TxOpts(skip_confirmation=False, skip_preflight=True))
+
+        instruction = transfer(
+            TransferParams(TOKEN_PROGRAM_ID, from_token_account, to_token_account, authority, amount))
+        with pytest.raises(RPCException, match="Cross-program invocation with unauthorized signer or writable account"):
+            solana_caller.execute(TOKEN_PROGRAM_ID, instruction, sender=from_wallet)

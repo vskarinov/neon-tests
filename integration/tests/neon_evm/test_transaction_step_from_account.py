@@ -326,7 +326,7 @@ class TestTransactionStepFromAccount:
                 )
             },
         )
-        signed_tx = make_contract_call_trx(sender_with_tokens, calculator_caller_contract, "callCalculator()", [],
+        signed_tx = make_contract_call_trx(sender_with_tokens, calculator_caller_contract, "callCalculator()",
                                            access_list=access_list)
         write_transaction_to_holder_account(signed_tx, holder_acc, operator_keypair)
 
@@ -420,7 +420,6 @@ class TestAccountStepContractCallContractInteractions:
                                session_user.balance_account_address,
                                rw_lock_contract.solana_address,
                                rw_lock_caller.solana_address]
-        print(result)
         for acc in result['solana_accounts']:
             additional_accounts.append(PublicKey(acc['pubkey']))
 

@@ -1,5 +1,5 @@
 import eth_abi
-from eth_utils import keccak, abi
+from eth_utils import keccak
 
 from integration.tests.neon_evm.solana_utils import (
     execute_trx_from_instruction_with_solana_call,
@@ -54,10 +54,10 @@ class SolanaCaller:
         )
         return bytes32_to_solana_pubkey(addr)
 
-    def get_eth_ext_authority(self, salt):
+    def get_eth_ext_authority(self, salt, sender):
         args = eth_abi.encode(["bytes32"], [salt])
         addr = self.neon_api_client.call_contract_get_function(
-            self.owner, self.contract, "getExtAuthority(bytes32)", args
+            sender, self.contract, "getExtAuthority(bytes32)", args
         )
         return bytes32_to_solana_pubkey(addr)
 
@@ -81,12 +81,39 @@ class SolanaCaller:
                 self.contract.solana_address,
                 program_id,
             ]
-            + (additional_accounts or []),
+            + (additional_accounts or [])
+            + self._get_all_pubkeys_from_instructions([instruction]),
+
             self.operator_keypair,
         )
         return resp
 
-    def batch_execute(self, call_params, sender=None, additional_accounts=None):
+    def execute_with_seed(self, program_id, instruction, seed, lamports=0, sender=None, additional_accounts=None):
+        sender = self.owner if sender is None else sender
+        serialized_instructions = serialize_instruction(program_id, instruction)
+        signed_tx = make_contract_call_trx(
+            sender, self.contract, "executeWithSeed(uint64,bytes32,bytes)", [lamports, seed, serialized_instructions]
+        )
+        resp = execute_trx_from_instruction_with_solana_call(
+            self.operator_keypair,
+            self.evm_loader,
+            self.treasury_pool.account,
+            self.treasury_pool.buffer,
+            signed_tx,
+            [
+                sender.balance_account_address,
+                sender.solana_account_address,
+                SOLANA_CALL_PRECOMPILED_ID,
+                self.contract.balance_account_address,
+                self.contract.solana_address,
+                program_id,
+            ]
+            + (additional_accounts or []) +
+            self._get_all_pubkeys_from_instructions([instruction]),
+            self.operator_keypair,
+        )
+        return resp
+    def batch_execute(self, call_params, sender=None, additional_accounts=None, additional_signers=None):
         # call_params = [(program_id, lamports, instruction), ...]
         execute_params = []
         for program_id, lamports, instruction in call_params:
@@ -120,7 +147,7 @@ class SolanaCaller:
             self.treasury_pool.account,
             self.treasury_pool.buffer,
             accounts,
-            self.operator_keypair,
+            self.operator_keypair, additional_signers,
         )
         return resp
 
