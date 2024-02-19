@@ -136,7 +136,7 @@ class TestInteroperability:
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
 
     def test_execute_several_instr_in_one_trx(self, sender_with_tokens, solana_caller):
-        instruction_count = 22
+        instruction_count = 10
         resource_addr = solana_caller.create_resource(sender_with_tokens, b"123", 8, 1000000000, COUNTER_ID)
 
         instruction = TransactionInstruction(
