@@ -138,7 +138,6 @@ def make_ExecuteTrxFromAccount(
         )
     if additional_signers:
         for acc in additional_signers:
-            print("Additional acc ", acc.public_key)
             accounts.append(
                 AccountMeta(acc.public_key, is_signer=True, is_writable=True),
             )

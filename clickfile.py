@@ -404,7 +404,7 @@ def get_evm_pinned_version(branch):
     help="neon_evm branch name. " "If branch doesn't exist, develop branch will be used",
 )
 def update_contracts(branch):
-    if is_neon_evm_branch_exist(branch):
+    if is_neon_evm_branch_exist(branch) and branch != "develop":
         neon_evm_branch = branch
     else:
         neon_evm_branch = get_evm_pinned_version("develop")

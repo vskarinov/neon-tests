@@ -80,9 +80,13 @@ class TestInteroperability:
 
     def test_create_resource(self, sender_with_tokens, solana_caller):
         salt = b"123"
-        resource_address = solana_caller.create_resource(sender_with_tokens, salt, 8, 1000000000, MEMO_PROGRAM_ID)
+        size = 8
+        resource_address = solana_caller.create_resource(sender_with_tokens, salt, size, 1000000000, MEMO_PROGRAM_ID)
         acc_info = solana_client.get_account_info(resource_address, commitment=Confirmed)
         assert acc_info.value is not None
+        assert acc_info.value.lamports > 0
+        assert len(acc_info.value.data) == size
+        assert str(acc_info.value.owner) == str(MEMO_PROGRAM_ID)
 
     def test_execute_from_instruction_for_compute_budget(self, sender_with_tokens, solana_caller):
         instruction = TransactionInstruction(
@@ -134,6 +138,8 @@ class TestInteroperability:
             [(ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, 2039280, instruction)], sender_with_tokens
         )
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+        payer_info = solana_client.get_account_info(payer, commitment=Confirmed)
+        assert payer_info.value is None
 
     def test_execute_several_instr_in_one_trx(self, sender_with_tokens, solana_caller):
         instruction_count = 10
