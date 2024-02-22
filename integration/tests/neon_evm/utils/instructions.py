@@ -113,6 +113,7 @@ def make_ExecuteTrxFromAccount(
     treasury_address: PublicKey,
     treasury_buffer: bytes,
     additional_accounts: tp.List[PublicKey],
+    additional_signers: tp.List[Keypair] = None,
     system_program=sp.SYS_PROGRAM_ID,
     tag=0x33,
 ):
@@ -135,7 +136,11 @@ def make_ExecuteTrxFromAccount(
         accounts.append(
             AccountMeta(acc, is_signer=False, is_writable=True),
         )
-
+    if additional_signers:
+        for acc in additional_signers:
+            accounts.append(
+                AccountMeta(acc.public_key, is_signer=True, is_writable=True),
+            )
     return TransactionInstruction(program_id=PublicKey(EVM_LOADER), data=data, keys=accounts)
 
 

@@ -24,9 +24,7 @@ class NeonApiClient:
             },
             "accounts": []
         }
-        print(body)
         resp = requests.post(url=f"{self.url}/emulate", json=body, headers=self.headers)
-        print(resp.text)
         if resp.status_code == 200:
             return resp.json()["value"]
         else:
@@ -53,7 +51,6 @@ class NeonApiClient:
         if args is not None:
             data += args
         result = self.emulate(sender.eth_address.hex(),  contract.eth_address.hex(), data)
-        print(result)
         return result["result"]
 
     def get_steps_count(self, from_acc, to, data):
