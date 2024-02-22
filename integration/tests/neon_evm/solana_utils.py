@@ -30,7 +30,7 @@ from .utils.constants import EVM_LOADER, SOLANA_URL, SYSTEM_ADDRESS, NEON_TOKEN_
     ACCOUNT_SEED_VERSION, TREASURY_POOL_SEED
 from .utils.instructions import make_DepositV03, make_Cancel, make_WriteHolder, make_ExecuteTrxFromInstruction, \
     TransactionWithComputeBudget, make_PartialCallOrContinueFromRawEthereumTX, \
-    make_ExecuteTrxFromAccountDataIterativeOrContinue, make_CreateAssociatedTokenIdempotent
+    make_ExecuteTrxFromAccountDataIterativeOrContinue, make_CreateAssociatedTokenIdempotent, make_ExecuteTrxFromAccount
 from .utils.layouts import BALANCE_ACCOUNT_LAYOUT
 from .types.types import Caller, Contract
 
@@ -56,7 +56,6 @@ LAMPORTS_PER_SIGNATURE = 5000
 ACCOUNT_STORAGE_OVERHEAD = 128
 
 
-
 def create_treasury_pool_address(pool_index, evm_loader=EVM_LOADER):
     return PublicKey.find_program_address(
         [bytes(TREASURY_POOL_SEED, 'utf8'), pool_index.to_bytes(4, 'little')],
@@ -64,7 +63,7 @@ def create_treasury_pool_address(pool_index, evm_loader=EVM_LOADER):
     )[0]
 
 
-def wait_for_account_to_exists(http_client: Client, account: PublicKey, timeout = 30, sleep_time = 0.4):
+def wait_for_account_to_exists(http_client: Client, account: PublicKey, timeout=30, sleep_time=0.4):
     elapsed_time = 0
     while elapsed_time < timeout:
         resp = http_client.get_account_info(account, commitment=Confirmed)
@@ -73,7 +72,7 @@ def wait_for_account_to_exists(http_client: Client, account: PublicKey, timeout 
 
         time.sleep(sleep_time)
         elapsed_time += sleep_time
-        
+
     raise RuntimeError(f"Account {account} not exists after {timeout} seconds")
 
 
@@ -102,8 +101,8 @@ def create_holder_account(account, operator, seed):
             AccountMeta(pubkey=operator, is_signer=True, is_writable=False),
         ],
         program_id=PublicKey(EVM_LOADER),
-        data=bytes.fromhex("24") + 
-            len(seed).to_bytes(8, 'little') + seed
+        data=bytes.fromhex("24") +
+             len(seed).to_bytes(8, 'little') + seed
     )
 
 
@@ -128,7 +127,8 @@ class neon_cli:
         self.verbose_flags = verbose_flags
 
     def call(self, arguments):
-        cmd = 'neon-cli {} --loglevel debug --commitment=processed --url {} {}'.format(self.verbose_flags, SOLANA_URL, arguments)
+        cmd = 'neon-cli {} --loglevel debug --commitment=processed --url {} {}'.format(self.verbose_flags, SOLANA_URL,
+                                                                                       arguments)
         proc_result = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, universal_newlines=True)
         result = json.loads(proc_result.stdout)
         if result["result"] == "error":
@@ -291,7 +291,7 @@ class EvmLoader:
     def ether2program(self, ether: Union[str, bytes]) -> Tuple[str, int]:
         items = PublicKey.find_program_address([ACCOUNT_SEED_VERSION, self.ether2bytes(ether)], PublicKey(EVM_LOADER))
         return str(items[0]), items[1]
-    
+
     def ether2balance(self, address: Union[str, bytes]) -> PublicKey:
         address_bytes = self.ether2bytes(address)
         chain_id_bytes = CHAIN_ID.to_bytes(32, 'big')
@@ -303,7 +303,7 @@ class EvmLoader:
     def check_account(self, solana):
         info = solana_client.get_account_info(solana)
         print("checkAccount({}): {}".format(solana, info))
-        
+
     def get_neon_nonce(self, account: Union[str, bytes, Caller]) -> int:
         if isinstance(account, Caller):
             return self.get_neon_nonce(account.eth_address)
@@ -318,7 +318,7 @@ class EvmLoader:
     def get_neon_balance(self, account: Union[str, bytes, Caller]) -> int:
         if isinstance(account, Caller):
             return self.get_neon_balance(account.eth_address)
-        
+
         solana_address = self.ether2balance(account)
 
         info: bytes = get_solana_account_data(solana_client, solana_address, BALANCE_ACCOUNT_LAYOUT.sizeof())
@@ -331,7 +331,8 @@ def get_solana_balance(account):
     return solana_client.get_balance(account, commitment=Confirmed).value
 
 
-def get_solana_account_data(solana_client: Client, account: Union[str, PublicKey, Keypair], expected_length: int) -> bytes:
+def get_solana_account_data(solana_client: Client, account: Union[str, PublicKey, Keypair],
+                            expected_length: int) -> bytes:
     if isinstance(account, Keypair):
         account = account.public_key
     print(f"Get account data for {account}")
@@ -345,9 +346,11 @@ def get_solana_account_data(solana_client: Client, account: Union[str, PublicKey
         raise Exception("Wrong data length for account data {}".format(account))
     return info.data
 
+
 def send_transaction(client: Client, trx: Transaction, *signers: Keypair, wait_status=Confirmed):
     print("Send trx")
-    result = client.send_transaction(trx, *signers, opts=TxOpts(skip_confirmation=True, preflight_commitment=wait_status))
+    result = client.send_transaction(trx, *signers,
+                                     opts=TxOpts(skip_confirmation=True, preflight_commitment=wait_status))
     print("Result: {}".format(result))
     client.confirm_transaction(result.value, commitment=Confirmed)
     return client.get_transaction(result.value, commitment=Confirmed)
@@ -487,32 +490,62 @@ def write_transaction_to_holder_account(
         solana_client.confirm_transaction(rcpt.value, commitment=Confirmed)
 
 
-def execute_trx_from_instruction(operator: Keypair, evm_loader: EvmLoader, treasury_address: PublicKey, treasury_buffer: bytes,
+def execute_trx_from_instruction(operator: Keypair, evm_loader: EvmLoader, treasury_address: PublicKey,
+                                 treasury_buffer: bytes,
                                  instruction: SignedTransaction,
-                                 additional_accounts, signer: Keypair, 
+                                 additional_accounts, signer: Keypair,
                                  system_program=sp.SYS_PROGRAM_ID) -> SendTransactionResp:
     trx = TransactionWithComputeBudget(operator)
     trx.add(make_ExecuteTrxFromInstruction(operator, evm_loader, treasury_address,
                                            treasury_buffer, instruction.rawTransaction, additional_accounts,
                                            system_program))
 
-    return solana_client.send_transaction(trx, signer, opts=TxOpts(skip_preflight=False, skip_confirmation=False, preflight_commitment=Confirmed))
+    return solana_client.send_transaction(trx, signer, opts=TxOpts(skip_preflight=False, skip_confirmation=False,
+                                                                   preflight_commitment=Confirmed))
+
+
+def execute_trx_from_instruction_with_solana_call(operator: Keypair, evm_loader: EvmLoader, treasury_address: PublicKey,
+                                                  treasury_buffer: bytes,
+                                                  instruction: SignedTransaction,
+                                                  additional_accounts, signer: Keypair,
+                                                  system_program=sp.SYS_PROGRAM_ID) -> SendTransactionResp:
+    trx = TransactionWithComputeBudget(operator)
+    trx.add(make_ExecuteTrxFromInstruction(operator, evm_loader, treasury_address,
+                                           treasury_buffer, instruction.rawTransaction, additional_accounts,
+                                           system_program, tag=0x38))
+    print(trx)
+    return solana_client.send_transaction(trx, signer, opts=TxOpts(skip_preflight=False, skip_confirmation=False,
+                                                                   preflight_commitment=Confirmed))
+
+
+def execute_trx_from_account_with_solana_call(operator: Keypair, evm_loader: EvmLoader, holder_address,
+                                              treasury_address: PublicKey, treasury_buffer: bytes,
+                                              additional_accounts, signer: Keypair,
+                                              system_program=sp.SYS_PROGRAM_ID) -> SendTransactionResp:
+    trx = TransactionWithComputeBudget(operator)
+    trx.add(make_ExecuteTrxFromAccount(operator, evm_loader, holder_address, treasury_address,
+                                       treasury_buffer, additional_accounts,
+                                       system_program, tag=0x39))
+    return solana_client.send_transaction(trx, signer, opts=TxOpts(skip_preflight=False,
+                                                                   skip_confirmation=False,
+                                                                   preflight_commitment=Confirmed))
 
 
 def send_transaction_step_from_instruction(operator: Keypair, evm_loader: EvmLoader, treasury, storage_account,
                                            instruction: SignedTransaction,
                                            additional_accounts, steps_count, signer: Keypair,
-                                           system_program=sp.SYS_PROGRAM_ID, index=0) -> SendTransactionResp:
+                                           system_program=sp.SYS_PROGRAM_ID, index=0, tag=0x34) -> SendTransactionResp:
     trx = TransactionWithComputeBudget(operator)
     trx.add(
         make_PartialCallOrContinueFromRawEthereumTX(
             index, steps_count, instruction.rawTransaction,
             operator, evm_loader, storage_account, treasury,
-            additional_accounts, system_program
+            additional_accounts, system_program, tag
         )
     )
 
-    return solana_client.send_transaction(trx, signer, opts=TxOpts(skip_preflight=False, skip_confirmation=False, preflight_commitment=Confirmed))
+    return solana_client.send_transaction(trx, signer, opts=TxOpts(skip_preflight=False, skip_confirmation=False,
+                                                                   preflight_commitment=Confirmed))
 
 
 def execute_transaction_steps_from_instruction(operator: Keypair, evm_loader: EvmLoader, treasury, storage_account,
@@ -524,7 +557,8 @@ def execute_transaction_steps_from_instruction(operator: Keypair, evm_loader: Ev
     index = 0
     done = False
     while not done:
-        response = send_transaction_step_from_instruction(operator, evm_loader, treasury, storage_account, instruction, additional_accounts, EVM_STEPS, signer, index=index)
+        response = send_transaction_step_from_instruction(operator, evm_loader, treasury, storage_account, instruction,
+                                                          additional_accounts, EVM_STEPS, signer, index=index)
         index += 1
 
         receipt = solana_client.get_transaction(response.value, commitment=Confirmed)
@@ -536,7 +570,7 @@ def execute_transaction_steps_from_instruction(operator: Keypair, evm_loader: Ev
                 break
             if "ExitError" in log:
                 raise AssertionError(f"EVM Return error in logs: {receipt}")
-            
+
     return response
 
 
@@ -556,13 +590,15 @@ def send_transaction_step_from_account(operator: Keypair, evm_loader: EvmLoader,
 
 
 def execute_transaction_steps_from_account(operator: Keypair, evm_loader: EvmLoader, treasury, storage_account,
-                                           additional_accounts, steps_count=EVM_STEPS, signer: Keypair = None) -> GetTransactionResp:
+                                           additional_accounts, steps_count=EVM_STEPS,
+                                           signer: Keypair = None) -> GetTransactionResp:
     signer = operator if signer is None else signer
 
     index = 0
     done = False
     while not done:
-        receipt = send_transaction_step_from_account(operator, evm_loader, treasury, storage_account, additional_accounts, EVM_STEPS, signer, index=index)
+        receipt = send_transaction_step_from_account(operator, evm_loader, treasury, storage_account,
+                                                     additional_accounts, EVM_STEPS, signer, index=index)
         index += 1
 
         if receipt.value.transaction.meta.err:
@@ -573,11 +609,12 @@ def execute_transaction_steps_from_account(operator: Keypair, evm_loader: EvmLoa
                 break
             if "ExitError" in log:
                 raise AssertionError(f"EVM Return error in logs: {receipt}")
-            
+
     return receipt
 
 
-def execute_transaction_steps_from_account_no_chain_id(operator: Keypair, evm_loader: EvmLoader, treasury, storage_account,
+def execute_transaction_steps_from_account_no_chain_id(operator: Keypair, evm_loader: EvmLoader, treasury,
+                                                       storage_account,
                                                        additional_accounts, steps_count=EVM_STEPS,
                                                        signer: Keypair = None) -> GetTransactionResp:
     signer = operator if signer is None else signer
@@ -585,7 +622,8 @@ def execute_transaction_steps_from_account_no_chain_id(operator: Keypair, evm_lo
     index = 0
     done = False
     while not done:
-        receipt = send_transaction_step_from_account(operator, evm_loader, treasury, storage_account, additional_accounts, EVM_STEPS, signer, tag=0x36, index=index)
+        receipt = send_transaction_step_from_account(operator, evm_loader, treasury, storage_account,
+                                                     additional_accounts, EVM_STEPS, signer, tag=0x36, index=index)
         index += 1
 
         if receipt.value.transaction.meta.err:
@@ -596,5 +634,5 @@ def execute_transaction_steps_from_account_no_chain_id(operator: Keypair, evm_lo
                 break
             if "ExitError" in log:
                 raise AssertionError(f"EVM Return error in logs: {receipt}")
-            
+
     return receipt
