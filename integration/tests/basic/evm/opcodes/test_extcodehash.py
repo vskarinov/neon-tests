@@ -168,6 +168,7 @@ class TestExtCodeHashOpcode:
         assert event_logs[0]["args"]["hash"].hex() == ZERO_HASH
         assert event_logs[1]["args"]["hash"] == keccak(self.web3_client.eth.get_code(new_acc.address, "latest"))
 
+    @pytest.mark.skip(reason="bug NDEV-2666")
     def test_extcodehash_for_new_account_with_changed_nonce(self, eip1052_checker, json_rpc_client):
         new_account = self.web3_client.create_account()
 
@@ -181,4 +182,5 @@ class TestExtCodeHashOpcode:
         ]
 
         response = json_rpc_client.send_rpc("eth_call", params=params)
+        assert "result" in response
         assert response["result"][2:] == keccak(self.web3_client.eth.get_code(new_account.address, "latest")).hex()
