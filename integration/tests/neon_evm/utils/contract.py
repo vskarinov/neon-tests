@@ -18,8 +18,8 @@ from web3.auto import w3
 
 
 def get_contract_bin(
-    contract: str,
-    contract_name: tp.Optional[str] = None,
+        contract: str,
+        contract_name: tp.Optional[str] = None,
 ):
     version = '0.7.6'
     if not contract.endswith(".sol"):
@@ -33,9 +33,11 @@ def get_contract_bin(
     if version not in [str(v) for v in solcx.get_installed_solc_versions()]:
         solcx.install_solc(version)
 
-    contract_path = (pathlib.Path.cwd() / "contracts" / "neon_evm" / f"{contract}").absolute()
+    contract_path = (pathlib.Path.cwd() / "contracts" / "neon_evm" / contract).absolute()
     if not contract_path.exists():
-        contract_path =  (pathlib.Path.cwd() / "contracts" / "external" / f"{contract}").absolute()
+        contract_path = (pathlib.Path.cwd() / "contracts" / contract).absolute()
+    if not contract_path.exists():
+        contract_path = (pathlib.Path.cwd() / "contracts" / "external" / contract).absolute()
 
     assert contract_path.exists(), f"Can't found contract: {contract_path}"
 
@@ -92,8 +94,8 @@ def make_contract_call_trx(user, contract, function_signature, params=None, valu
     if params is not None:
         types = function_signature.split("(")[1].split(")")[0].split(",")
         data += eth_abi.encode(types, params)
-        
-    signed_tx = make_eth_transaction(contract.eth_address, data, user, value=value, 
+
+    signed_tx = make_eth_transaction(contract.eth_address, data, user, value=value,
                                      chain_id=chain_id, access_list=access_list, type=trx_type)
     return signed_tx
 
