@@ -31,7 +31,8 @@ from .utils.constants import EVM_LOADER, SOLANA_URL, SYSTEM_ADDRESS, NEON_TOKEN_
 from .utils.instructions import make_DepositV03, make_Cancel, make_WriteHolder, make_ExecuteTrxFromInstruction, \
     TransactionWithComputeBudget, make_PartialCallOrContinueFromRawEthereumTX, \
     make_ExecuteTrxFromAccountDataIterativeOrContinue, make_CreateAssociatedTokenIdempotent, make_ExecuteTrxFromAccount
-from .utils.layouts import BALANCE_ACCOUNT_LAYOUT
+
+from .utils.layouts import BALANCE_ACCOUNT_LAYOUT, CONTRACT_ACCOUNT_LAYOUT
 from .types.types import Caller, Contract
 
 EVM_LOADER_SO = os.environ.get("EVM_LOADER_SO", 'target/bpfel-unknown-unknown/release/evm_loader.so')
@@ -343,6 +344,12 @@ class EvmLoader:
         layout = BALANCE_ACCOUNT_LAYOUT.parse(info)
 
         return int.from_bytes(layout.balance, byteorder="little")
+    def get_balance_account_revision(self, address):
+        account_data = get_solana_account_data(solana_client, address, BALANCE_ACCOUNT_LAYOUT.sizeof())
+        return BALANCE_ACCOUNT_LAYOUT.parse(account_data).revision
+    def get_contract_account_revision(self, address):
+        account_data = get_solana_account_data(solana_client, address, CONTRACT_ACCOUNT_LAYOUT.sizeof())
+        return CONTRACT_ACCOUNT_LAYOUT.parse(account_data).revision
 
 
 def get_solana_balance(account):
@@ -353,9 +360,7 @@ def get_solana_account_data(solana_client: Client, account: Union[str, PublicKey
                             expected_length: int) -> bytes:
     if isinstance(account, Keypair):
         account = account.public_key
-    print(f"Get account data for {account}")
     info = solana_client.get_account_info(account, commitment=Confirmed)
-    print(f"Result: {info}")
     info = info.value
     if info is None:
         raise Exception("Can't get information about {}".format(account))
