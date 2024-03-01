@@ -291,13 +291,18 @@ def generate_allure_environment(network_name: str):
 
 
 def install_python_requirements():
-    command = "pip3 install --upgrade -r deploy/requirements/click.txt -r deploy/requirements/prod.txt  -r deploy/requirements/devel.txt -r deploy/requirements/ui.txt"
+    command = (
+        "uv pip install --upgrade "
+        "-r deploy/requirements/click.txt "
+        "-r deploy/requirements/prod.txt  "
+        "-r deploy/requirements/devel.txt"
+    )
     subprocess.check_call(command, shell=True)
 
 
 def install_ui_requirements():
     click.echo(green("Install python requirements for Playwright"))
-    command = "pip3 install --upgrade -r deploy/requirements/ui.txt"
+    command = "uv pip install --upgrade -r deploy/requirements/ui.txt"
     subprocess.check_call(command, shell=True)
     # On Linux Playwright require `xclip` to work.
     if sys.platform in ["linux", "linux2"]:
@@ -338,7 +343,7 @@ def cli():
     "-d",
     "--dep",
     default="devel",
-    type=click.Choice(["devel", "python", "oz", "ui"]),
+    type=click.Choice(["devel", "python", "ui", "all"]),
     help="Which deps install",
 )
 @catch_traceback
@@ -346,6 +351,9 @@ def requirements(dep):
     if dep in ["devel", "python"]:
         install_python_requirements()
     if dep == "ui":
+        install_ui_requirements()
+    if dep == "all":
+        install_python_requirements()
         install_ui_requirements()
 
 
