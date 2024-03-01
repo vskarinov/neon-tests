@@ -10,8 +10,6 @@ import shutil
 import subprocess
 import sys
 import typing as tp
-from pathlib import Path
-from multiprocessing.dummy import Pool
 from urllib.parse import urlparse
 
 try:
@@ -28,7 +26,7 @@ try:
     from deploy.cli.network_manager import NetworkManager
     from deploy.cli import dapps as dapps_cli
 
-    from utils import create_allure_environment_opts
+    from utils import create_allure_environment_opts, run_command_and_print_output
     from utils import web3client
     from utils import cloud
     from utils.operator import Operator
@@ -173,50 +171,29 @@ def check_profitability(func: tp.Callable) -> tp.Callable:
     return wrapper
 
 
+def run_openzeppelin_tests(network, branch, jobs=8, amount=20000, users=8):
+    click.echo(f"Running OpenZeppelin tests in {jobs} jobs on {network}")
+    cwd = (pathlib.Path().parent / "compatibility/results").absolute()
+    cwd.mkdir(parents=True, exist_ok=True)
+    nested_accounts = [dapps_cli.prepare_accounts(network, users, amount) for i in range(jobs)]
+    escaped_json_na = json.dumps(nested_accounts).replace('"', '\\"')
+
+    image = "neonlabsorg/openzeppelin-contracts"
+    tag = "latest" if branch in ["master", "main", "develop", "latest"] else branch
+
+    params = dict()
+    params["NESTED_ACCOUNTS"] = f'"{escaped_json_na}"'
+    params["NETWORK_ID"] = network_manager.get_network_object(network)["network_ids"]["neon"]
+    params["PROXY_URL"] = network_manager.get_network_object(network)["proxy_url"]
+    envs = "".join([f"-e {k}={v} " for k, v in params.items()])[:-1]
+    commands = f"""
+        docker run -i {envs} -v {cwd}:"/usr/src/app/results" {image}:{tag} python3 ./docker/runner.py --jobs {jobs}
+    """
+    run_command_and_print_output(commands)
+
+
 @check_profitability
-def run_openzeppelin_tests(network, jobs=8, amount=20000, users=8):
-    print(f"Running OpenZeppelin tests in {jobs} jobs on {network}")
-    cwd = (pathlib.Path().parent / "compatibility/openzeppelin-contracts").absolute()
-    if not list(cwd.glob("*")):
-        subprocess.check_call("git submodule init && git submodule update", shell=True, cwd=cwd)
-    (cwd.parent / "results").mkdir(parents=True, exist_ok=True)
-    keys_env = [dapps_cli.prepare_accounts(network, users, amount) for i in range(jobs)]
-
-    tests = list(Path(f"{cwd}/test").rglob("*.test.js"))
-    tests = [str(test) for test in tests]
-
-    def run_oz_file(file_name):
-        print(f"Run {file_name}")
-        keys = keys_env.pop(0)
-        env = os.environ.copy()
-        env["PRIVATE_KEYS"] = ",".join(keys)
-        env["NETWORK_ID"] = str(network_manager.get_network_param(network, "network_ids.neon"))
-        env["PROXY_URL"] = network_manager.get_network_param(network, "proxy_url")
-
-        out = subprocess.run(
-            f"npx hardhat test {file_name}",
-            shell=True,
-            cwd=cwd,
-            capture_output=True,
-            env=env,
-        )
-        stdout = out.stdout.decode()
-        stderr = out.stderr.decode()
-        print(f"Test {file_name} finished with code {out.returncode}")
-        print(stdout)
-        print(stderr)
-        keys_env.append(keys)
-        log_dirs = cwd.parent / "results" / file_name.replace(".", "_").replace("/", "_")
-        log_dirs.mkdir(parents=True, exist_ok=True)
-        with open(log_dirs / "stdout.log", "w") as f:
-            f.write(stdout)
-        with open(log_dirs / "stderr.log", "w") as f:
-            f.write(stderr)
-
-    pool = Pool(jobs)
-    pool.map(run_oz_file, tests)
-    pool.close()
-    pool.join()
+def prepare_oz_allure_report(network: str):
     # Add allure environment
     settings = network_manager.get_network_object(network)
     web3_client = web3client.NeonChainWeb3Client(settings["proxy_url"])
@@ -452,6 +429,7 @@ def update_contracts(branch):
 @click.option("-p", "--numprocesses", help="Number of parallel jobs for basic tests")
 @click.option("-a", "--amount", default=20000, help="Requested amount from faucet")
 @click.option("-u", "--users", default=8, help="Accounts numbers used in OZ tests")
+@click.option("-b", "--branch", default="master", help="branch name for OZ tests")
 @click.option(
     "--ui-item",
     default="all",
@@ -464,7 +442,7 @@ def update_contracts(branch):
     type=click.Choice(["economy", "basic", "tracer", "services", "oz", "ui", "evm", "compiler_compatibility"]),
 )
 @catch_traceback
-def run(name, jobs, numprocesses, ui_item, amount, users, network):
+def run(name, jobs, numprocesses, ui_item, amount, users, network, branch):
     if not network and name == "ui":
         network = "devnet"
     if DST_ALLURE_CATEGORIES.parent.exists():
@@ -491,8 +469,7 @@ def run(name, jobs, numprocesses, ui_item, amount, users, network):
         if numprocesses:
             command = f"{command} --numprocesses {numprocesses}"
     elif name == "oz":
-        run_openzeppelin_tests(network, jobs=int(jobs), amount=int(amount), users=int(users))
-        shutil.copyfile(SRC_ALLURE_CATEGORIES, DST_ALLURE_CATEGORIES)
+        run_openzeppelin_tests(network, jobs=int(jobs), amount=int(amount), users=int(users), branch=branch)
         return
     elif name == "ui":
         if not os.environ.get("CHROME_EXT_PASSWORD"):
@@ -514,14 +491,32 @@ def run(name, jobs, numprocesses, ui_item, amount, users, network):
         sys.exit(cmd.returncode)
 
 
-@cli.command(help="Summarize openzeppelin tests results")
-def ozreport():
-    test_report, skipped_files = parse_openzeppelin_results()
-    print_test_suite_results(test_report, skipped_files)
-    print_oz_balances()
+@cli.command(
+    help="OZ actions:\n"
+    "prepare_allure - prepare allure files for openzeppelin tests\n"
+    "report - summarize openzeppelin tests results\n"
+    "analyze - analyze openzeppelin tests results"
+)
+@click.option("-n", "--network", default="night-stand", type=str, help="In which stand run tests")
+@click.argument(
+    "name",
+    required=True,
+    type=click.Choice(["prepare_allure", "report", "analyze"]),
+)
+def oz(name, network):
+    if name == "prepare_allure":
+        prepare_oz_allure_report(network)
+        shutil.copyfile(SRC_ALLURE_CATEGORIES, DST_ALLURE_CATEGORIES)
+    elif name == "report":
+        test_report, skipped_files = parse_openzeppelin_results()
+        print_test_suite_results(test_report, skipped_files)
+        print_oz_balances()
+        return
+    elif name == "analyze":
+        analyze_openzeppelin_results()
+        return
 
 
-@cli.command(help="Analyze openzeppelin tests results")
 @catch_traceback
 def analyze_openzeppelin_results():
     test_report, skipped_files = parse_openzeppelin_results()
