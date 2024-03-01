@@ -520,7 +520,7 @@ def oz(name, network):
 @catch_traceback
 def analyze_openzeppelin_results():
     test_report, skipped_files = parse_openzeppelin_results()
-    with open("./compatibility/openzeppelin-contracts/package.json") as f:
+    with open("./compatibility/results/openzeppelin-package.json") as f:
         version = json.load(f)["version"]
         print(f"OpenZeppelin version: {version}")
 
