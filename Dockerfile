@@ -1,5 +1,5 @@
-FROM neonlabsorg/openzeppelin-contracts:c6f166bc1a3ecc0fadd2e62d3a4de7566311da62 as oz-contracts
-FROM ubuntu:20.04 as build
+FROM neonlabsorg/openzeppelin-contracts:NDEV-2559 as oz-contracts
+FROM ubuntu:20.04
 
 ENV TZ=Europe/Moscow
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -46,8 +46,8 @@ RUN apt install -y libxkbcommon0 \
 
 COPY ./deploy/requirements/* /opt/
 
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10 && \
-    pip3 install uv && \
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     uv venv
 
 ENV VIRTUAL_ENV=/.venv
