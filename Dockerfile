@@ -75,3 +75,7 @@ RUN mkdir -p ${DOWNLOAD_PATH} && \
     curl -o ${DOWNLOAD_PATH}/${SOLC_BINARY} ${REPOSITORY_PATH}/${SOLC_BINARY} && \
     curl -o ${DOWNLOAD_PATH}/list.json ${REPOSITORY_PATH}/list.json && \
     chmod -R 755 ${DOWNLOAD_PATH}
+
+RUN rm -rf /opt/neon-tests/compatibility/openzeppelin-contracts
+FROM neonlabsorg/openzeppelin-contracts:latest as oz-contracts
+COPY --from=oz-contracts /usr/src/app /opt/neon-tests/compatibility/openzeppelin-contracts
