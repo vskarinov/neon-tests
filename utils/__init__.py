@@ -34,11 +34,3 @@ def setup_logging(log_level=logging.DEBUG):
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     return logger
-
-
-def run_command_and_print_output(command):
-    with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True) as process:
-        for line in process.stdout:
-            print(line, end="")
-        process.wait()
-        return process.returncode
