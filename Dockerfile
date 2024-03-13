@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+FROM neonlabsorg/openzeppelin-contracts:c6f166bc1a3ecc0fadd2e62d3a4de7566311da62 as oz-contracts
+FROM ubuntu:20.04 as build
 
 ENV TZ=Europe/Moscow
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -77,5 +78,4 @@ RUN mkdir -p ${DOWNLOAD_PATH} && \
     chmod -R 755 ${DOWNLOAD_PATH}
 
 RUN rm -rf /opt/neon-tests/compatibility/openzeppelin-contracts
-FROM neonlabsorg/openzeppelin-contracts:latest as oz-contracts
 COPY --from=oz-contracts /usr/src/app /opt/neon-tests/compatibility/openzeppelin-contracts
