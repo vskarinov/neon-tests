@@ -1,5 +1,4 @@
 import logging
-import subprocess
 import typing as tp
 import pathlib
 

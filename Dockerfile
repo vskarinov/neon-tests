@@ -1,4 +1,6 @@
-FROM neonlabsorg/openzeppelin-contracts:NDEV-2559 as oz-contracts
+ARG OZ_BRANCH=master
+
+FROM neonlabsorg/openzeppelin-contracts:$OZ_BRANCH as oz-contracts
 FROM ubuntu:20.04
 
 ENV TZ=Europe/Moscow
@@ -46,8 +48,8 @@ RUN apt install -y libxkbcommon0 \
 
 COPY ./deploy/requirements/* /opt/
 
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10 && \
+    pip3 install uv && \
     uv venv
 
 ENV VIRTUAL_ENV=/.venv
@@ -63,10 +65,6 @@ RUN python3 ./clickfile.py requirements -d all
 
 ARG CONTRACTS_BRANCH
 RUN python3 ./clickfile.py update-contracts --branch ${CONTRACTS_BRANCH}
-
-COPY ./deploy/oz/run-full-test-suite.sh /opt/neon-tests/
-ARG OZ_BRANCH=master
-RUN chmod a+x run-full-test-suite.sh
 
 # Download solc separatly as hardhat implementation is flucky
 ENV DOWNLOAD_PATH="/root/.cache/hardhat-nodejs/compilers-v2/linux-amd64" \
