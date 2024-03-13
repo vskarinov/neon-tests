@@ -6,7 +6,7 @@ rm -rf ./allure-report
 python3 clickfile.py run oz --network=${NETWORK_NAME} --jobs=${FTS_JOBS_NUMBER} --amount=${REQUEST_AMOUNT} --users=${FTS_USERS_NUMBER}
 
 # "Print OpenZeppelin report"
-python3 clickfile.py ozreport
+python3 clickfile.py oz report
 
 # "Archive report"
 ALLURE_RESULT_DIR=./allure-results
