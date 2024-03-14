@@ -13,6 +13,8 @@ import web3
 from eth_abi import abi
 from eth_utils import keccak
 from solana.publickey import PublicKey
+from solcx import link_code
+
 
 
 @allure.step("Get contract abi")
@@ -28,6 +30,7 @@ def get_contract_interface(
     version: str,
     contract_name: tp.Optional[str] = None,
     import_remapping: tp.Optional[dict] = None,
+    libraries: tp.Optional[dict] = None,
 ):
     if not contract.endswith(".sol"):
         contract += ".sol"
@@ -37,8 +40,7 @@ def get_contract_interface(
         else:
             contract_name = contract.rsplit(".", 1)[0]
 
-    if version not in [str(v) for v in solcx.get_installed_solc_versions()]:
-        solcx.install_solc(version)
+    solcx.install_solc(version)
     if contract.startswith("/"):
         contract_path = pathlib.Path(contract)
     else:
@@ -57,6 +59,8 @@ def get_contract_interface(
         optimize=True,
     )  # this allow_paths isn't very good...
     contract_interface = get_contract_abi(contract_name, compiled)
+    if libraries:
+        contract_interface["bin"] = link_code(contract_interface["bin"], libraries)
 
     return contract_interface
 

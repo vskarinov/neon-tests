@@ -346,14 +346,14 @@ class EvmLoader:
 
         return int.from_bytes(layout.balance, byteorder="little")
 
-    def get_data_account_revision(self, address):
-        account_data = get_solana_account_data(solana_client, address, STORAGE_CELL_LAYOUT.sizeof())
-        return STORAGE_CELL_LAYOUT.parse(account_data).revision
-
 
     def get_contract_account_revision(self, address):
         account_data = get_solana_account_data(solana_client, address, CONTRACT_ACCOUNT_LAYOUT.sizeof())
         return CONTRACT_ACCOUNT_LAYOUT.parse(account_data).revision
+
+    def get_data_account_revision(self, address):
+        account_data = get_solana_account_data(solana_client, address, STORAGE_CELL_LAYOUT.sizeof())
+        return STORAGE_CELL_LAYOUT.parse(account_data).revision
 
 
 def get_solana_balance(account):
