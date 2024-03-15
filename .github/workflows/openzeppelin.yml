@@ -1,5 +1,5 @@
 name: "OpenZeppelin"
-run-name: "OpenZeppelin / ${{ github.event.inputs.network || 'night-stand' }}"
+run-name: "OpenZeppelin / ${{ github.event.inputs.network || 'night-stand' }} / ${{ github.event.inputs.jobsNumber || '8' }} jobs"
 
 on:
   schedule:
