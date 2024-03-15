@@ -212,7 +212,7 @@ class TestPrecompiledSplToken:
             assert "incorrect program id for instruction" in str(e)
 
     def test_is_system_account(self, spl_token_caller, token_mint):
-        assert spl_token_caller.functions.isSystemAccount(self.accounts[0].address).call() is True
+        assert spl_token_caller.functions.isSystemAccount(self.accounts[3].address).call() is True
         assert spl_token_caller.functions.isSystemAccount(token_mint).call() is False
 
     def test_find_account(self, spl_token_caller, token_mint):
