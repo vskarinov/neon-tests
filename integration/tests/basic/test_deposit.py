@@ -84,16 +84,6 @@ class TestDeposit:
         self.sol_client.request_airdrop(new_sol_account.public_key, 1 * LAMPORT_PER_SOL)
         self.sol_client.mint_spl_to(token_mint, new_sol_account, 1000000000000000)
 
-        # self.sol_client.deposit_neon_like_tokens_from_solana_to_neon(
-        #     neon_mint,
-        #     new_sol_account,
-        #     new_account,
-        #     web3_client_usdt.eth.chain_id,
-        #     operator_keypair,
-        #     evm_loader_keypair,
-        #     evm_loader_id,
-        #     amount,
-        # )
         tx = token_from_solana_to_neon_tx(
             self.sol_client,
             new_sol_account,
