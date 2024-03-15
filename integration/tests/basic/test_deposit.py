@@ -42,13 +42,13 @@ class TestDeposit:
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
         assert receipt["status"] == 1
 
-    def test_transfer_neon_from_solana_to_neon(self, new_account, solana_account, pytestconfig: Config, neon_mint):
+    def test_transfer_neon_from_solana_to_neon(self, solana_account, pytestconfig: Config, neon_mint):
         """Transfer Neon from Solana -> Neon"""
         amount = 0.1
         sender_account = self.accounts[0]
         full_amount = int(amount * LAMPORT_PER_SOL)
         evm_loader_id = pytestconfig.environment.evm_loader
-
+        new_account = self.accounts.create_account()
         neon_balance_before = self.web3_client.get_balance(new_account.address)
 
         self.sol_client.create_ata(solana_account, neon_mint)
@@ -70,7 +70,6 @@ class TestDeposit:
     @pytest.mark.multipletokens
     def test_create_and_transfer_new_token_from_solana_to_neon(
         self,
-        new_account,
         solana_account,
         pytestconfig: Config,
         neon_mint,
@@ -83,6 +82,7 @@ class TestDeposit:
         token_mint = PublicKey(MULTITOKEN_MINTS["USDT"])
         self.sol_client.request_airdrop(new_sol_account.public_key, 1 * LAMPORT_PER_SOL)
         self.sol_client.mint_spl_to(token_mint, new_sol_account, 1000000000000000)
+        new_account = self.accounts.create_account()
 
         tx = token_from_solana_to_neon_tx(
             self.sol_client,
@@ -98,13 +98,14 @@ class TestDeposit:
         usdt_balance_after = web3_client_usdt.get_balance(new_account)
         assert usdt_balance_after == amount * 1000000000000
 
-    def test_transfer_spl_token_from_solana_to_neon(self, solana_account, new_account, pytestconfig: Config, erc20_spl):
+    def test_transfer_spl_token_from_solana_to_neon(self, solana_account, pytestconfig: Config, erc20_spl):
         evm_loader_id = pytestconfig.environment.evm_loader
         amount = 0.1
         full_amount = int(amount * LAMPORT_PER_SOL)
 
         mint_pubkey = wSOL["address_spl"]
         ata_address = get_associated_token_address(solana_account.public_key, mint_pubkey)
+        new_account = self.accounts.create_account()
 
         self.sol_client.create_ata(solana_account, mint_pubkey)
 
@@ -183,9 +184,8 @@ class TestWithdraw:
 
     @pytest.mark.parametrize("move_amount, error", [(11000, web3.exceptions.ContractLogicError), (10000, ValueError)])
     def test_failed_withdraw_insufficient_balance(
-        self, pytestconfig: Config, move_amount, error, withdraw_contract, neon_mint, solana_account, prepare_account
+        self, pytestconfig: Config, move_amount, error, withdraw_contract, neon_mint, solana_account
     ):
-        # FIXME: NDEV-2496 Don't work if run all tests (because dest_acc already exist)
         dest_acc = solana_account
 
         spl_neon_token = SplToken(self.sol_client, neon_mint, TOKEN_PROGRAM_ID, dest_acc.public_key)
@@ -198,10 +198,10 @@ class TestWithdraw:
         # assert json.loads(response.to_json())["message"] == "Invalid param: could not find account"
 
         with pytest.raises(error):
-            self.withdraw(prepare_account, dest_acc, amount, withdraw_contract)
+            self.withdraw(self.accounts.create_account(10000), dest_acc, amount, withdraw_contract)
 
         response = spl_neon_token.get_balance(dest_token_acc, commitment=Commitment("confirmed"))
-        # assert json.loads(response.to_json())["message"] == "Invalid param: could not find account"
+        assert json.loads(response.to_json())["message"] == "Invalid param: could not find account"
 
     @pytest.mark.only_stands
     def test_success_withdraw_to_non_existing_account(
