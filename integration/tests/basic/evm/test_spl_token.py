@@ -221,7 +221,7 @@ class TestPrecompiledSplToken:
         assert spl_token_caller.functions.findAccount(token_mint).call() != ZERO_HASH
 
     def test_close_account(self, spl_token_caller, token_mint):
-        sender_account = self.accounts[0]
+        sender_account = self.accounts.create_account()
         tx = self.web3_client.make_raw_tx(sender_account)
 
         instruction_tx = spl_token_caller.functions.initializeAccount(
