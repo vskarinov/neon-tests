@@ -16,7 +16,7 @@ from solana.rpc import commitment
 from solana.rpc.types import TxOpts
 
 from utils.apiclient import JsonRPCSession
-from utils.consts import LAMPORT_PER_SOL, Unit
+from utils.consts import LAMPORT_PER_SOL, Unit, MULTITOKEN_MINTS
 from utils.erc20 import ERC20
 from utils.erc20wrapper import ERC20Wrapper
 from utils.operator import Operator
@@ -25,12 +25,6 @@ from utils.prices import get_sol_price, get_neon_price
 from utils.transfers_inter_networks import token_from_solana_to_neon_tx
 
 NEON_AIRDROP_AMOUNT = 10_000
-
-
-MULTITOKEN_MINTS = {
-    "USDT": "2duuuuhNJHUYqcnZ7LKfeufeeTBgSJdftf2zM3cZV6ym",
-    "ETH": "EwJYd3UAFAgzodVeHprB2gMQ68r4ZEbbvpoVzCZ1dGq5",
-}
 
 
 def pytest_collection_modifyitems(config, items):
@@ -323,7 +317,7 @@ def account_with_all_tokens(
                 mint = MULTITOKEN_MINTS["ETH"]
             token_mint = PublicKey(mint)
 
-            sol_client_session.mint_spl_to(token_mint, solana_account, 1000000000000000000)
+            sol_client_session.mint_spl_to(token_mint, solana_account, 1000000000000000)
 
             tx = token_from_solana_to_neon_tx(
                 sol_client_session,
