@@ -2,7 +2,7 @@ owner: public(address)
 
 
 # __init__ is not called when deployed from create_forwarder_to
-@external
+@deploy
 def __init__():
   self.owner = msg.sender
 
