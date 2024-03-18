@@ -22,8 +22,7 @@ def get_installable_vyper_versions():
 
 
 def install(version):
-    # code = subprocess.check_call([sys.executable, "-m", "pip", "install", f'vyper=={version}'])
-    code = subprocess.check_call(f"uv pip install vyper=={version}")
+    code = subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", f"vyper=={version}"])
     if code != 0:
         raise RuntimeError(f"Failed to install vyper {version}")
 
