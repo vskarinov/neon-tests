@@ -398,11 +398,11 @@ def storage_contract(web3_client, class_account) -> tp.Any:
 
 
 @pytest.fixture(scope="class")
-def storage_contract_with_deploy_tx(web3_client, class_account) -> tp.Any:
+def storage_contract_with_deploy_tx(web3_client, accounts) -> tp.Any:
     contract, contract_deploy_tx = web3_client.deploy_and_get_contract(
         "common/StorageSoliditySource",
         "0.8.8",
-        class_account,
+        accounts[0],
         contract_name="Storage",
         constructor_args=[],
     )
