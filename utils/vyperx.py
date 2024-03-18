@@ -15,14 +15,15 @@ def get_installable_vyper_versions():
             print(f"Failed request attempt: {url}, response:{res.text}")
         else:
             data = res.json()
-            versions = data['releases']
+            versions = data["releases"]
             return sorted(versions, key=parse_version, reverse=True)
 
     raise RuntimeError(f"Failed to request available vyper versions")
 
 
 def install(version):
-    code = subprocess.check_call([sys.executable, "-m", "pip", "install", f'vyper=={version}'])
+    # code = subprocess.check_call([sys.executable, "-m", "pip", "install", f'vyper=={version}'])
+    code = subprocess.check_call(f"uv pip install vyper=={version}")
     if code != 0:
         raise RuntimeError(f"Failed to install vyper {version}")
 
