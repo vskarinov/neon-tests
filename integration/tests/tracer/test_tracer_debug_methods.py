@@ -81,7 +81,7 @@ class TestTracerDebugMethods:
                 "gas": hex(tx_info["gas"]),
                 "gasPrice": hex(tx_info["gasPrice"]),
                 "value": hex(tx_info["value"]),
-                "data": tx_info["input"].hex(),
+                "data": tx_info["input"],
             },
             hex(tx_info["blockNumber"]),
         ]
@@ -115,7 +115,7 @@ class TestTracerDebugMethods:
                 "gas": hex(tx_info["gas"]),
                 "gasPrice": hex(tx_info["gasPrice"]),
                 "value": hex(tx_info["value"]),
-                "data": tx_info["input"].hex(),
+                "data": tx_info["input"],
             },
             hex(tx_info["blockNumber"]),
         ]
@@ -156,7 +156,6 @@ class TestTracerDebugMethods:
             timeout_sec=120,
         )
         response = self.tracer_api.send_rpc(method="debug_traceTransaction", params=[tx_hash])
-        assert "error" not in response, "Error in response"
         assert "error" not in response, "Error in response"
         assert 1 <= int(response["result"]["returnValue"], 16) <= 100
         self.validate_response_result(response)
