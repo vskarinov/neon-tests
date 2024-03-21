@@ -15,8 +15,6 @@ import typing as tp
 from pathlib import Path
 from urllib.parse import urlparse
 
-from utils.helpers import time_measure
-
 try:
     import click
 except ImportError:
@@ -31,7 +29,7 @@ try:
     from deploy.cli.network_manager import NetworkManager
     from deploy.cli import dapps as dapps_cli
 
-    from utils import create_allure_environment_opts
+    from utils import create_allure_environment_opts, time_measure
     from deploy.cli import infrastructure
     from utils import web3client
     from utils import cloud
@@ -886,9 +884,11 @@ def deploy(current_branch, head_branch, base_branch):
         version_branch = None
 
     if version_branch:
-        proxy_tag = version_branch if is_branch_exist(PROXY_GITHUB_URL, version_branch) and not proxy_tag else ""
-        evm_tag = version_branch if is_branch_exist(NEON_EVM_GITHUB_URL, version_branch) and not evm_tag else ""
-        faucet_tag = version_branch if is_branch_exist(FAUCET_GITHUB_URL, version_branch) and not faucet_tag else ""
+        proxy_tag = version_branch if is_branch_exist(PROXY_GITHUB_URL, version_branch) and not proxy_tag else proxy_tag
+        evm_tag = version_branch if is_branch_exist(NEON_EVM_GITHUB_URL, version_branch) and not evm_tag else evm_tag
+        faucet_tag = (
+            version_branch if is_branch_exist(FAUCET_GITHUB_URL, version_branch) and not faucet_tag else faucet_tag
+        )
 
     proxy_tag = "latest" if not proxy_tag else proxy_tag
     evm_tag = "latest" if not evm_tag else evm_tag

@@ -3,6 +3,7 @@ import pathlib
 import random
 import string
 import time
+import typing
 import typing as tp
 
 import allure
@@ -138,17 +139,21 @@ def create_invalid_address(length=20) -> str:
     return address
 
 
-def time_measure(start_time, end_time, job_name=""):
-    elapsed_time = end_time - start_time
-    elapsed_minutes = elapsed_time / 60
-    log_message = f"Job {job_name}, Time: {elapsed_time:.2f}s"
+def cryptohex(text: str):
+    return "0x" + keccak(text=text).hex()
 
-    # Add annotations based on duration
-    if elapsed_minutes > 15:
-        log_message += " (15m+)"
-    elif elapsed_minutes > 10:
-        log_message += " (10m+)"
-    elif elapsed_minutes > 5:
-        log_message += " (5m+)"
 
-    return log_message
+def int_to_hex(number: int):
+    return int(number).to_bytes(32, "big").hex()
+
+
+def hasattr_recursive(obj: typing.Any, attribute: str) -> bool:
+    attr = attribute.split(".")
+    temp_obj = obj
+    for a in attr:
+        if hasattr(temp_obj, a):
+            temp_obj = getattr(temp_obj, a)
+            continue
+        return False
+
+    return True

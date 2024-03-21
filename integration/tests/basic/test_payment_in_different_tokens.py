@@ -229,15 +229,15 @@ class TestMultiplyChains:
         alice,
         common_contract,
         web3_client_sol,
-        web3_client_abc,
-        web3_client_def,
+        web3_client_usdt,
+        web3_client_eth,
         class_account_sol_chain,
     ):
         chains = {
             "neon": {"client": self.web3_client},
             "sol": {"client": web3_client_sol},
-            "abc": {"client": web3_client_abc},
-            "def": {"client": web3_client_def},
+            "usdt": {"client": web3_client_usdt},
+            "eth": {"client": web3_client_eth},
         }
 
         make_nonce_the_biggest_for_chain(alice, self.web3_client, [item["client"] for item in chains.values()])
@@ -245,8 +245,9 @@ class TestMultiplyChains:
         bunch_contract_neon, _ = self.web3_client.deploy_and_get_contract(
             contract="common/Common", version="0.8.12", contract_name="BunchActions", account=alice
         )
-
+        print("CHAINS", chains)
         for chain in chains:
+            print("Chain ", chain)
             bunch_contract = chains[chain]["client"].get_deployed_contract(
                 bunch_contract_neon.address, "common/Common", contract_name="BunchActions"
             )
