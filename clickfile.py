@@ -2,6 +2,7 @@
 import functools
 import glob
 import json
+import time
 from multiprocessing.dummy import Pool
 
 import yaml
@@ -13,6 +14,8 @@ import sys
 import typing as tp
 from pathlib import Path
 from urllib.parse import urlparse
+
+from utils.helpers import time_measure
 
 try:
     import click
@@ -182,63 +185,60 @@ def run_openzeppelin_tests(network, jobs=8, amount=20000, users=8):
     if not list(cwd.glob("*")):
         subprocess.check_call("git submodule init && git submodule update", shell=True, cwd=cwd)
         subprocess.check_call("npm ci", shell=True, cwd=cwd)
-    (cwd.parent / "results").mkdir(parents=True, exist_ok=True)
-    # keys_env = [infrastructure.prepare_accounts(network, users, amount) for i in range(jobs)]
+    log_dir = cwd.parent / "results"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    keys_env = [infrastructure.prepare_accounts(network, users, amount) for i in range(jobs)]
 
     tests = list(Path(f"{cwd}/test").rglob("*.test.js"))
     tests = [str(test) for test in tests]
 
-    env = os.environ.copy()
-    env["PRIVATE_KEYS"] = ",".join(infrastructure.prepare_accounts(network, users, amount))
-    env["NETWORK_ID"] = str(network_manager.get_network_param(network, "network_ids.neon"))
-    env["PROXY_URL"] = network_manager.get_network_param(network, "proxy_url")
+    def run_oz_file(file_name):
+        print(f"Run {file_name}")
+        keys = keys_env.pop(0)
+        env = os.environ.copy()
+        env["PRIVATE_KEYS"] = ",".join(keys)
+        env["NETWORK_ID"] = str(network_manager.get_network_param(network, "network_ids.neon"))
+        env["PROXY_URL"] = network_manager.get_network_param(network, "proxy_url")
 
-    out = subprocess.run(
-        f"npx hardhat test",
-        shell=True,
-        cwd=cwd,
-        capture_output=True,
-        env=env,
-    )
-    stdout = out.stdout.decode()
-    stderr = out.stderr.decode()
-    # print(f"Test {file_name} finished with code {out.returncode}")
-    print(f"Tests finished with code {out.returncode}")
-    print(stdout)
-    print(stderr)
+        start_time = time.time()
+        out = subprocess.run(
+            f"npx hardhat test {file_name}",
+            shell=True,
+            cwd=cwd,
+            capture_output=True,
+            env=env,
+        )
+        end_time = time.time()
+        stdout = out.stdout.decode()
+        stderr = out.stderr.decode()
+        time_info = time_measure(start_time=start_time, end_time=end_time, job_name=file_name)
+        print(f"Test {file_name} finished with code {out.returncode}")
+        print(stdout)
+        print(stderr)
+        print(time_info)
+        keys_env.append(keys)
+        log_dirs = cwd.parent / "results" / file_name.replace(".", "_").replace("/", "_")
+        log_dirs.mkdir(parents=True, exist_ok=True)
+        with open(log_dirs / "stdout.log", "w") as f:
+            f.write(stdout)
+        with open(log_dirs / "stderr.log", "w") as f:
+            f.write(stderr)
+        with open(log_dirs / "time.log", "w") as f:
+            f.write(time_info)
 
-    # def run_oz_file(file_name):
-    #     print(f"Run {file_name}")
-    #     keys = keys_env.pop(0)
-    #     env = os.environ.copy()
-    #     env["PRIVATE_KEYS"] = ",".join(keys)
-    #     env["NETWORK_ID"] = str(network_manager.get_network_param(network, "network_ids.neon"))
-    #     env["PROXY_URL"] = network_manager.get_network_param(network, "proxy_url")
-    #
-    #     out = subprocess.run(
-    #         f"npx hardhat test {file_name}",
-    #         shell=True,
-    #         cwd=cwd,
-    #         capture_output=True,
-    #         env=env,
-    #     )
-    #     stdout = out.stdout.decode()
-    #     stderr = out.stderr.decode()
-    #     print(f"Test {file_name} finished with code {out.returncode}")
-    #     print(stdout)
-    #     print(stderr)
-    #     keys_env.append(keys)
-    #     log_dirs = cwd.parent / "results" / file_name.replace(".", "_").replace("/", "_")
-    #     log_dirs.mkdir(parents=True, exist_ok=True)
-    #     with open(log_dirs / "stdout.log", "w") as f:
-    #         f.write(stdout)
-    #     with open(log_dirs / "stderr.log", "w") as f:
-    #         f.write(stderr)
+    pool = Pool(jobs)
+    pool.map(run_oz_file, tests)
+    pool.close()
+    pool.join()
 
-    # pool = Pool(jobs)
-    # pool.map(run_oz_file, tests)
-    # pool.close()
-    # pool.join()
+    with open(log_dir / "time.log", "w") as merged_log:
+        for sub_dir in log_dir.iterdir():
+            if sub_dir.is_dir():
+                time_log_path = sub_dir / "time.log"
+                if time_log_path.exists():
+                    with open(time_log_path, "r") as time_log:
+                        contents = time_log.read()
+                        merged_log.write(contents + "\n")
 
     # Add allure environment
     settings = network_manager.get_network_object(network)

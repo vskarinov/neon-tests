@@ -18,7 +18,7 @@ on:
       jobsNumber:
         description: "Count of parallel jobs"
         required: true
-        default: "8"
+        default: "16"
       oz_branch:
         description: "Which OZ branch to use (if it is empty 'master', branch will be used)"
         required: false

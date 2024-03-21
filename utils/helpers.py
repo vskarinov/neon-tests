@@ -136,3 +136,19 @@ def create_invalid_address(length=20) -> str:
     while web3.Web3.is_checksum_address(address):
         address = gen_hash_of_block(length)
     return address
+
+
+def time_measure(start_time, end_time, job_name=""):
+    elapsed_time = end_time - start_time
+    elapsed_minutes = elapsed_time / 60
+    log_message = f"Job {job_name}, Time: {elapsed_time:.2f}s"
+
+    # Add annotations based on duration
+    if elapsed_minutes > 15:
+        log_message += " (15m+)"
+    elif elapsed_minutes > 10:
+        log_message += " (10m+)"
+    elif elapsed_minutes > 5:
+        log_message += " (5m+)"
+
+    return log_message
