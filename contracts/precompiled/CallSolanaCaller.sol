@@ -1,7 +1,7 @@
 pragma solidity >=0.7.0 <0.9.0;
 pragma abicoder v2;
 
-import "../external/call_solana.sol";
+import "../external/neon-evm/call_solana.sol";
 
 
 contract CallSolanaCaller {

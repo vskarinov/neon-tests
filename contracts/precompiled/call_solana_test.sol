@@ -2,8 +2,8 @@
 
 pragma solidity >= 0.7.0;
 pragma abicoder v2;
-import "../external/SPLToken.sol";
-import "../external/call_solana.sol";
+import "../external/neon-evm/SPLToken.sol";
+import "../external/neon-evm/call_solana.sol";
 
 SPLToken constant _splToken = SPLToken(0xFf00000000000000000000000000000000000004);
 CallSolana constant _callSolana = CallSolana(0xFF00000000000000000000000000000000000006);
