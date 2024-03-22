@@ -250,6 +250,7 @@ def run_openzeppelin_tests(network, jobs=8, amount=20000, users=8):
     # Add epic name for allure result files
     openzeppelin_reports = Path("./allure-results")
     res_file_list = [str(res_file) for res_file in openzeppelin_reports.glob("*-result.json")]
+    shutil.copyfile(log_dir / "time.log", openzeppelin_reports / "time_consolidated.log")
     print("Fix allure results: {}".format(len(res_file_list)))
 
     for res_file in res_file_list:
