@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     name: The Graph tests
     env:
-      FAUCET_URL: ${{ env.DEVNET_FAUCET_URL }}
+      FAUCET_URL: ${{ vars.DEVNET_FAUCET_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Install python requirements
