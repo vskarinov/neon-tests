@@ -11,7 +11,7 @@ EXPANDED_ENVS = [
 ]
 
 
-class NetworkManager():
+class NetworkManager:
     def __init__(self):
         self._networks = {}
 
@@ -21,7 +21,7 @@ class NetworkManager():
                 environments = defaultdict(dict)
                 for var in EXPANDED_ENVS:
                     environments[NETWORK_NAME].update({var.lower(): os.environ.get(var, "")})
-                environments[NETWORK_NAME]['network_ids'] = {'neon': os.environ.get('NETWORK_ID', "")}
+                environments[NETWORK_NAME]["network_ids"] = {"neon": os.environ.get("NETWORK_ID", "")}
                 self._networks.update(environments)
 
     def get_network_param(self, network, params=None):
@@ -29,7 +29,7 @@ class NetworkManager():
         if network in self._networks:
             value = self._networks[network]
             if params:
-                for item in params.split('.'):
+                for item in params.split("."):
                     value = value[item]
         if isinstance(value, str):
             if os.environ.get("SOLANA_IP"):
@@ -42,6 +42,9 @@ class NetworkManager():
         network = self.get_network_param(network_name)
         if network_name == "terraform":
             network["proxy_url"] = self.get_network_param(network_name, "proxy_url")
+            network["solana_url"] = self.get_network_param(network_name, "solana_url")
+            network["faucet_url"] = self.get_network_param(network_name, "faucet_url")
+        elif network_name in ["devnet", "tracer_ci"]:
             network["solana_url"] = self.get_network_param(network_name, "solana_url")
             network["faucet_url"] = self.get_network_param(network_name, "faucet_url")
         return network
