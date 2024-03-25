@@ -9,6 +9,8 @@ jobs:
   tests:
     runs-on: ubuntu-20.04
     name: The Graph tests
+    env:
+      FAUCET_URL: ${{ needs.prepare.outputs.faucet_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Install python requirements
