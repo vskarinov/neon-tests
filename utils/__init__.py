@@ -40,7 +40,6 @@ def time_measure(start_time, end_time, job_name=""):
     elapsed_minutes = elapsed_time / 60
     log_message = f"Job {job_name}, Time: {elapsed_time:.2f}s"
 
-    # Add annotations based on duration
     if elapsed_minutes > 15:
         log_message += " (15m+)"
     elif elapsed_minutes > 10:
