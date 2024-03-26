@@ -121,7 +121,7 @@ jobs:
         id: basic
         run: |
           docker exec -i ${{ env.CONTAINER }} \
-            python3 ./clickfile.py run basic -n ${{ env.NETWORK }} --numprocesses ${{ env.NUMPROCESSES }}
+            /bin/bash -c "export DEVNET_FAUCET_URL=${{ env.FAUCET_URL }} && python3 ./clickfile.py run basic -n ${{ env.NETWORK }} --numprocesses ${{ env.NUMPROCESSES }}"
       - name: "Notify on failure."
         if: failure()
         run: |
