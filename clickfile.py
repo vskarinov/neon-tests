@@ -201,10 +201,7 @@ def run_openzeppelin_tests(network, jobs=8, amount=20000, users=8):
         else:
             other_tests.append(test)
 
-    if len(priority_tests) > jobs:
-        raise RuntimeError(
-            f"Number of priority tests ${len(priority_tests)} is more than parallel jobs specified ${jobs}"
-        )
+    prioritised_tests = priority_tests + other_tests
 
     keys_env = [infrastructure.prepare_accounts(network, users, amount) for i in range(jobs)]
 
@@ -242,15 +239,9 @@ def run_openzeppelin_tests(network, jobs=8, amount=20000, users=8):
         with open(log_dirs / "time.log", "w") as f:
             f.write(time_info)
 
-    print("Run priority tests first in parallel")
-    pool = Pool(len(priority_tests))
-    pool.map(run_oz_file, priority_tests)
-    pool.close()
-    pool.join()
-
-    print("Run other tests in parallel")
+    print("Run tests in parallel")
     pool = Pool(jobs)
-    pool.map(run_oz_file, other_tests)
+    pool.map(run_oz_file, prioritised_tests)
     pool.close()
     pool.join()
 
