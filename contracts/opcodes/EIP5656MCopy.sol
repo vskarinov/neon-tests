@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.5;
+pragma solidity ^0.8.25;
 
-contract MemoryCopyExample {
+contract MemoryCopy {
 
-    function copy(uint256 from, uint256 to, uint256 length) public pure returns (bytes memory) {
-        bytes memory data = new bytes(length);
-        bytes memory initData = "Hello, World!";
-
+    function copy(bytes32 initData, uint24 dst, uint24 src, uint24 length) public pure returns (bytes32) {
         assembly {
-            mstore(add(from, 0x20), mload(add(initData, 0x20)))
-            mcopy(add(data, 0x20), add(from, 0x20), length)
+            let p := mload(0x40)
+            mstore(p, initData)
+            mcopy(add(p, dst), add(p, src), length)
+            return (p, 32)
         }
-        
-        return data;
     }
 }
