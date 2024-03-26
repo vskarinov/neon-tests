@@ -1,5 +1,5 @@
 name: "OpenZeppelin"
-run-name: "OpenZeppelin / ${{ github.event.inputs.network || 'night-stand' }}"
+run-name: "OpenZeppelin / ${{ github.event.inputs.network || 'night-stand' }} / ${{ github.event.inputs.jobsNumber || '16' }} jobs"
 
 on:
   schedule:
@@ -18,7 +18,7 @@ on:
       jobsNumber:
         description: "Count of parallel jobs"
         required: true
-        default: "8"
+        default: "16"
       oz_tag:
         description: "Which OZ tag to use (if it is empty, the 'latest' tag will be used)"
         required: false
