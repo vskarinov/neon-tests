@@ -47,11 +47,15 @@ def pytest_collection_modifyitems(config, items):
 
     if len(environments[network_name]["network_ids"]) == 1:
         deselected_marks.append("multipletokens")
-    for item in items:
-        if any([item.get_closest_marker(mark) for mark in deselected_marks]):
-            deselected_items.append(item)
-        else:
-            selected_items.append(item)
+    
+    if network_name == "mainnet":
+        selected_items.append("mainnet")
+    else:
+        for item in items:
+            if any([item.get_closest_marker(mark) for mark in deselected_marks]):
+                deselected_items.append(item)
+            else:
+                selected_items.append(item)
 
     config.hook.pytest_deselected(items=deselected_items)
     items[:] = selected_items
