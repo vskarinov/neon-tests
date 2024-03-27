@@ -42,7 +42,7 @@ class TestDeposit:
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
         assert receipt["status"] == 1
 
-    @pytest.mark.only_mainnet
+    @pytest.mark.mainnet
     def test_transfer_neon_from_solana_to_neon(self, solana_account, pytestconfig: Config, neon_mint):
         """Transfer Neon from Solana -> Neon"""
         amount = 0.1
@@ -68,7 +68,7 @@ class TestDeposit:
         neon_balance_after = self.web3_client.get_balance(new_account.address)
         assert neon_balance_after == neon_balance_before + web3.Web3.to_wei(amount, "ether")
 
-    @pytest.mark.only_mainnet
+    @pytest.mark.mainnet
     @pytest.mark.multipletokens
     def test_create_and_transfer_new_token_from_solana_to_neon(
         self,
@@ -100,7 +100,7 @@ class TestDeposit:
         usdt_balance_after = web3_client_usdt.get_balance(new_account)
         assert usdt_balance_after == amount * 1000000000000
 
-    @pytest.mark.only_mainnet
+    @pytest.mark.mainnet
     def test_transfer_spl_token_from_solana_to_neon(self, solana_account, pytestconfig: Config, erc20_spl):
         evm_loader_id = pytestconfig.environment.evm_loader
         amount = 0.1
@@ -130,7 +130,7 @@ class TestDeposit:
 
         assert int(ata_balance_after.value.amount) == int(ata_balance_before.value.amount) + full_amount
 
-    @pytest.mark.only_mainnet
+    @pytest.mark.mainnet
     @pytest.mark.multipletokens
     def test_transfer_wrapped_sol_token_from_solana_to_neon(
         self, solana_account, pytestconfig: Config, web3_client_sol
@@ -233,7 +233,7 @@ class TestWithdraw:
 
         assert int(destination_balance_after.value.amount) == int(move_amount / 1_000_000_000)
 
-    @pytest.mark.only_mainnet
+    @pytest.mark.mainnet
     def test_success_withdraw_to_existing_account(
         self, pytestconfig: Config, withdraw_contract, neon_mint, solana_account
     ):

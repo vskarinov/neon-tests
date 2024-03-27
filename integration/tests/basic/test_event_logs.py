@@ -20,6 +20,7 @@ class TestLogs:
     web3_client: NeonChainWeb3Client
     accounts: EthAccounts
 
+    @pytest.mark.mainnet
     def test_non_args_event(self, event_caller_contract):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)
@@ -31,6 +32,7 @@ class TestLogs:
         assert event_logs[0].args == {}
         assert event_logs[0].event == "NonArgs"
 
+    @pytest.mark.mainnet
     def test_all_types_args_event(self, event_caller_contract, json_rpc_client):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)
@@ -57,6 +59,7 @@ class TestLogs:
         response = json_rpc_client.send_rpc(method="neon_getTransactionReceipt", params=[resp["transactionHash"].hex()])
         assert_log_field_in_neon_trx_receipt(response, 1)
 
+    @pytest.mark.mainnet
     def test_indexed_args_event(self, event_caller_contract, json_rpc_client):
         amount = random.randint(1, 100)
         sender_account = self.accounts[0]
@@ -73,7 +76,8 @@ class TestLogs:
 
         response = json_rpc_client.send_rpc(method="neon_getTransactionReceipt", params=[resp["transactionHash"].hex()])
         assert_log_field_in_neon_trx_receipt(response, 1)
-
+    
+    @pytest.mark.mainnet
     def test_non_indexed_args_event(self, event_caller_contract, json_rpc_client):
         amount = random.randint(1, 100)
         sender_account = self.accounts[0]
@@ -89,6 +93,7 @@ class TestLogs:
         response = json_rpc_client.send_rpc(method="neon_getTransactionReceipt", params=[resp["transactionHash"].hex()])
         assert_log_field_in_neon_trx_receipt(response, 1)
 
+    @pytest.mark.mainnet
     def test_unnamed_args_event(self, event_caller_contract, json_rpc_client):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)
@@ -102,6 +107,7 @@ class TestLogs:
         response = json_rpc_client.send_rpc(method="neon_getTransactionReceipt", params=[resp["transactionHash"].hex()])
         assert_log_field_in_neon_trx_receipt(response, 1)
 
+    @pytest.mark.mainnet
     def test_big_args_count(self, event_caller_contract, json_rpc_client):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)
@@ -116,6 +122,7 @@ class TestLogs:
         response = json_rpc_client.send_rpc(method="neon_getTransactionReceipt", params=[resp["transactionHash"].hex()])
         assert_log_field_in_neon_trx_receipt(response, 1)
 
+    @pytest.mark.mainnet
     def test_several_events_in_one_trx(self, event_caller_contract, json_rpc_client):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)
@@ -131,6 +138,7 @@ class TestLogs:
         response = json_rpc_client.send_rpc(method="neon_getTransactionReceipt", params=[resp["transactionHash"].hex()])
         assert_log_field_in_neon_trx_receipt(response, 3)
 
+    @pytest.mark.mainnet
     def test_many_the_same_events_in_one_trx(self, event_caller_contract, json_rpc_client):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account, gas=0)

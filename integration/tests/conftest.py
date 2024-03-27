@@ -122,7 +122,10 @@ def operator(pytestconfig: Config, web3_client_session: NeonChainWeb3Client) -> 
 def bank_account(pytestconfig: Config) -> tp.Optional[Keypair]:
     account = None
     if pytestconfig.environment.use_bank:
-        private_key = os.environ.get("BANK_PRIVATE_KEY")
+        if pytestconfig.getoption("--network") == "devnet":
+            private_key = os.environ.get("BANK_PRIVATE_KEY")
+        elif pytestconfig.getoption("--network") == "mainnet":
+            private_key = os.environ.get("BANK_PRIVATE_KEY_MAINNET")
         key = base58.b58decode(private_key)
         account = Keypair.from_secret_key(key)
     yield account
