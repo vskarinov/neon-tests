@@ -24,6 +24,7 @@ class TestNonce:
             tx_receipt = self.web3_client.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
             assert tx_receipt["status"] == 1
 
+    @pytest.mark.only_mainnet
     def test_get_receipt_sequence(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -34,6 +35,7 @@ class TestNonce:
 
         self.check_transaction_list(tx_hash_list)
 
+    @pytest.mark.only_mainnet
     def test_reverse_sequence(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]

@@ -94,6 +94,26 @@
       "BMp6gEnveANdvSvspESJUrNczuHz1GF5UQKjVLCkAZih"
     ]
   },
+  "mainnet": {
+    "evm_loader": "NeonVMyRX5GbCrsAHnUwx1nYYoJAtskU1bWUo6JGNyG",
+    "proxy_url": "https://mainnet-proxy.neonevm.org",
+    "solana_url": "https://api.mainnet-beta.solana.com",
+    "network_ids": {
+      "neon": 245022934
+    },
+    "neonpass_url": "https://neonpass.live/",
+    "tracer_url": "https://thegraph.neonevm.org/neon-rpc",
+    "ws_subscriber_url": "wss://ws.mainnet.neonevm.org/websocket/",
+    "spl_neon_mint": "NeonTjSjsuo3rexg9o6vHuMXw62f9V7zvmu8M8Zut44",
+    "neon_erc20wrapper_address": "0x202C35e517Fa803B537565c40F0a6965D7204609",
+    "eth_bank_account": "",
+    "operator_neon_rewards_address": [
+      ""
+    ],
+    "operator_keys": [
+      ""
+    ]
+  },
   "devnet": {
     "evm_loader": "eeLSJgWzzxrqKv1UxtRVVH8FX3qCQWUs9QuAjJpETGU",
     "proxy_url": "https://devnet.neonevm.org/",
