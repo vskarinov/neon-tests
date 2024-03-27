@@ -136,6 +136,8 @@ def eth_bank_account(pytestconfig: Config, web3_client_session) -> tp.Optional[K
     account = None
     if pytestconfig.environment.eth_bank_account != "":
         account = web3_client_session.eth.account.from_key(pytestconfig.environment.eth_bank_account)
+    if pytestconfig.getoption("--network") == "mainnet":
+        account = web3_client_session.eth.account.from_key(os.environ.get("ETH_BANK_PRIVATE_KEY_MAINNET"))
     yield account
 
 
