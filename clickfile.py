@@ -215,7 +215,7 @@ def run_openzeppelin_tests(network, jobs=8, amount=20000, users=8):
 
         start_time = time.time()
         out = subprocess.run(
-            f"npx hardhat test {file_name}",
+            f"npx --node-options='--max-old-space-size=8192' hardhat test {file_name}",
             shell=True,
             cwd=cwd,
             capture_output=True,
