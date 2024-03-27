@@ -36,7 +36,7 @@ env:
   NUMPROCESSES: ${{ github.event.inputs.numprocesses || 8 }}
   BUILD_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   SOLANA_URL: "${{ secrets.SOLANA_URL }}"
-  FAUCET_URL: ${{ secrets.DEVNET_FAUCET_URL }}
+  FAUCET_URL: "${{ secrets.DEVNET_FAUCET_URL }}"
   IMAGE:  neonlabsorg/neon_tests
   CONTAINER:  basic-${{ github.run_id }}
 jobs:
