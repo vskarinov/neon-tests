@@ -40,6 +40,7 @@ class TestERC20SPL:
     def restore_balance(self, erc20_contract):
         pass
 
+    @pytest.mark.mainnet
     def test_metaplex_data(self, erc20_contract):
         metaplex.wait_account_info(self.sol_client, erc20_contract.token_mint.pubkey)
         metadata = metaplex.get_metadata(self.sol_client, erc20_contract.token_mint.pubkey)
@@ -70,6 +71,7 @@ class TestERC20SPL:
         symbol = erc20_contract.contract.functions.symbol().call()
         assert symbol == erc20_contract.symbol
 
+    @pytest.mark.mainnet
     def test_name(self, erc20_contract):
         name = erc20_contract.contract.functions.name().call()
         assert name == erc20_contract.name

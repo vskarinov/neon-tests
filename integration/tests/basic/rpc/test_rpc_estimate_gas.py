@@ -91,7 +91,6 @@ class TestRpcEstimateGas:
         assert deploy_trx_big_gas.get("status"), f"Transaction is incomplete: {deploy_trx_big_gas}"
         assert estimated_gas >= int(deploy_trx_big_gas["gasUsed"]), "Estimated Gas < Used Gas"
 
-    @pytest.mark.mainnet
     def test_rpc_estimate_gas_send_neon(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -114,7 +113,6 @@ class TestRpcEstimateGas:
         else:
             assert estimated_gas == 1_422_000
 
-    @pytest.mark.mainnet
     def test_rpc_estimate_gas_spl(self, erc20_spl):
         recipient_account = self.accounts[1]
         tx_receipt = erc20_spl.transfer(erc20_spl.account, recipient_account, 1)
@@ -124,7 +122,6 @@ class TestRpcEstimateGas:
         estimated_gas = transaction["gas"]
         assert estimated_gas == 2_089_280
 
-    @pytest.mark.mainnet
     def test_rpc_estimate_gas_contract_get_value(self, common_contract):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(from_=sender_account)

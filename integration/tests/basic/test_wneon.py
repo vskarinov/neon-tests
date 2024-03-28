@@ -97,7 +97,6 @@ class TestWNeon:
         )
         assert wneon_balance_after == wneon_balance_before - withdraw_amount
 
-    @pytest.mark.mainnet
     def test_transfer_and_check_token_does_not_use_spl(self, wneon):
         deposit_amount = 10
         sender_account = self.accounts[0]

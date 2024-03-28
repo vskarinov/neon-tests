@@ -187,7 +187,6 @@ class TestRpcBaseCalls:
         assert "error" not in response
         assert rpc_checks.is_hex(response["result"]), f"Invalid response result {response['result']}"
 
-    @pytest.mark.mainnet
     def test_eth_sendRawTransaction_max_size(self, json_rpc_client):
         """Validate max size for transaction, 127 KB"""
         size = 127 * 1024
@@ -203,7 +202,6 @@ class TestRpcBaseCalls:
         assert "error" not in response
         assert rpc_checks.is_hex(response["result"]), f"Invalid response result {response['result']}"
 
-    @pytest.mark.mainnet
     def test_eth_sendRawTransaction_max_contract_size(self, json_rpc_client):
         new_account = self.accounts.create_account()
 

@@ -521,7 +521,10 @@ def run(name, jobs, numprocesses, ui_item, amount, users, network):
     if name == "economy":
         command = "py.test integration/tests/economy/test_economics.py"
     elif name == "basic":
-        command = "py.test integration/tests/basic"
+        if network == "mainnet":
+            command = "py.test integration/tests/basic -m mainnet"
+        else:
+            command = "py.test integration/tests/basic"
         if numprocesses:
             command = f"{command} --numprocesses {numprocesses} --dist loadgroup"
     elif name == "tracer":

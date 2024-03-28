@@ -24,7 +24,6 @@ class TestNonce:
             tx_receipt = self.web3_client.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
             assert tx_receipt["status"] == 1
 
-    @pytest.mark.mainnet
     def test_get_receipt_sequence(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -35,7 +34,6 @@ class TestNonce:
 
         self.check_transaction_list(tx_hash_list)
 
-    @pytest.mark.mainnet
     def test_reverse_sequence(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -53,7 +51,6 @@ class TestNonce:
 
         self.check_transaction_list(tx_hash_list[::-1])
 
-    @pytest.mark.mainnet
     def test_random_sequence(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -71,7 +68,6 @@ class TestNonce:
 
         self.check_transaction_list(tx_hash_list)
 
-    @pytest.mark.mainnet
     def test_send_transaction_with_low_nonce_after_several_high(self, json_rpc_client):
         """Check that transaction with a higher nonce is waiting for its turn in the mempool"""
         sender_account = self.accounts[0]
@@ -94,7 +90,6 @@ class TestNonce:
         tx_receipt = self.web3_client.eth.wait_for_transaction_receipt(trx[n + 3]["result"], timeout=120)
         assert tx_receipt is not None, "Transaction should be accepted"
 
-    @pytest.mark.mainnet
     def test_send_transaction_with_low_nonce_after_high(self, json_rpc_client):
         """Check that transaction with a higher nonce is waiting for its turn in the mempool"""
         sender_account = self.accounts[0]
@@ -139,7 +134,6 @@ class TestNonce:
         assert ErrorMessage.REPLACEMENT_UNDERPRICED.value in response["error"]["message"]
         assert response["error"]["code"] == -32000
 
-    @pytest.mark.mainnet
     def test_send_transaction_with_the_same_nonce_and_higher_gas(self, json_rpc_client):
         """Check that transaction with higher gas and the same nonce can be sent"""
         sender_account = self.accounts[2]
@@ -160,7 +154,6 @@ class TestNonce:
         assert "error" not in response
         assert "result" in response
 
-    @pytest.mark.mainnet
     def test_send_the_same_transactions_if_accepted(self, json_rpc_client):
         """Transaction cannot be sent again if it was accepted"""
         sender_account = self.accounts[0]
@@ -177,7 +170,6 @@ class TestNonce:
         assert ErrorMessage.ALREADY_KNOWN.value in response["error"]["message"]
         assert response["error"]["code"] == -32000
 
-    @pytest.mark.mainnet
     def test_send_the_same_transactions_if_not_accepted(self, json_rpc_client):
         """Transaction can be sent again if it was not accepted"""
         sender_account = self.accounts[0]
@@ -191,7 +183,6 @@ class TestNonce:
         assert "error" not in response
         assert "result" in response
 
-    @pytest.mark.mainnet
     def test_send_transaction_with_old_nonce(self, json_rpc_client):
         """Check that transaction with old nonce can't be sent"""
         sender_account = self.accounts.create_account()

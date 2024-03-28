@@ -40,6 +40,11 @@ def pytest_collection_modifyitems(config, items):
 
     if network_name != "night-stand":
         deselected_marks.append("slow")
+    
+    if network_name == "mainnet":
+        deselected_marks.append("only_stands")
+        deselected_marks.append("only_devnet")
+
 
     envs_file = config.getoption("--envs")
     with open(pathlib.Path().parent.parent / envs_file, "r+") as f:
@@ -47,15 +52,11 @@ def pytest_collection_modifyitems(config, items):
 
     if len(environments[network_name]["network_ids"]) == 1:
         deselected_marks.append("multipletokens")
-    
-    if network_name == "mainnet":
-        selected_items.append("mainnet")
-    else:
-        for item in items:
-            if any([item.get_closest_marker(mark) for mark in deselected_marks]):
-                deselected_items.append(item)
-            else:
-                selected_items.append(item)
+        
+    for item in items:
+        if any([item.get_closest_marker(mark) for mark in deselected_marks]):
+            deselected_items.append(item)
+        selected_items.append(item)
 
     config.hook.pytest_deselected(items=deselected_items)
     items[:] = selected_items
@@ -176,17 +177,30 @@ def erc20_spl(
     pytestconfig: Config,
     sol_client_session,
     solana_account,
+    eth_bank_account,
 ):
     symbol = "".join([random.choice(string.ascii_uppercase) for _ in range(3)])
-    erc20 = ERC20Wrapper(
-        web3_client_session,
-        faucet,
-        f"Test {symbol}",
-        symbol,
-        sol_client_session,
-        solana_account=solana_account,
-        mintable=False,
-        evm_loader_id=pytestconfig.environment.evm_loader,
+    if pytestconfig.getoption("--network") == "mainnet":
+        erc20 = ERC20Wrapper(
+            web3_client_session,
+            faucet,
+            f"Test {symbol}",
+            symbol,
+            sol_client_session,
+            solana_account=solana_account,
+            mintable=False,
+            bank_account=eth_bank_account,
+        )
+    else:
+        erc20 = ERC20Wrapper(
+            web3_client_session,
+            faucet,
+            f"Test {symbol}",
+            symbol,
+            sol_client_session,
+            solana_account=solana_account,
+            mintable=False,
+            evm_loader_id=pytestconfig.environment.evm_loader,
     )
     erc20.token_mint.approve(
         source=erc20.solana_associated_token_acc,
@@ -202,28 +216,56 @@ def erc20_spl(
 
     erc20.claim(erc20.account, bytes(erc20.solana_associated_token_acc), 100000000000000)
     yield erc20
+    balance = web3_client_session.get_balance(erc20.owner)
+    web3_client_session.send_neon(erc20.owner.address, eth_bank_account, balance)
 
 
 @pytest.fixture(scope="session")
-def erc20_simple(web3_client_session, faucet):
-    erc20 = ERC20(web3_client_session, faucet)
-    return erc20
+def erc20_simple(web3_client_session, faucet, pytestconfig: Config, eth_bank_account):
+    if pytestconfig.getoption("--network") == "mainnet":
+        erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account)
+    else:
+        erc20 = ERC20(web3_client_session, faucet)
+    yield erc20
+    balance = web3_client_session.get_balance(erc20.owner)
+    web3_client_session.send_neon(erc20.owner.address, eth_bank_account, balance)
 
 
 @pytest.fixture(scope="session")
-def erc20_spl_mintable(web3_client_session: NeonChainWeb3Client, faucet, sol_client_session, solana_account):
+def erc20_spl_mintable(
+    web3_client_session: NeonChainWeb3Client, 
+    faucet, 
+    sol_client_session, 
+    solana_account, 
+    pytestconfig: Config, 
+    eth_bank_account,
+):
     symbol = "".join([random.choice(string.ascii_uppercase) for _ in range(3)])
-    erc20 = ERC20Wrapper(
-        web3_client_session,
-        faucet,
-        f"Test {symbol}",
-        symbol,
-        sol_client_session,
-        solana_account=solana_account,
-        mintable=True,
-    )
+    if pytestconfig.getoption("--network") == "mainnet":
+        erc20 = ERC20Wrapper(
+            web3_client_session,
+            faucet,
+            f"Test {symbol}",
+            symbol,
+            sol_client_session,
+            solana_account=solana_account,
+            mintable=True,
+            bank_account=eth_bank_account,
+        )
+    else:
+        erc20 = ERC20Wrapper(
+            web3_client_session,
+            faucet,
+            f"Test {symbol}",
+            symbol,
+            sol_client_session,
+            solana_account=solana_account,
+            mintable=True,
+        )
     erc20.mint_tokens(erc20.account, erc20.account.address)
     yield erc20
+    balance = web3_client_session.get_balance(erc20.owner)
+    web3_client_session.send_neon(erc20.owner.address, eth_bank_account, balance)
 
 
 @pytest.fixture(scope="class")
