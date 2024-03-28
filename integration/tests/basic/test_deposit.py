@@ -68,7 +68,6 @@ class TestDeposit:
         neon_balance_after = self.web3_client.get_balance(new_account.address)
         assert neon_balance_after == neon_balance_before + web3.Web3.to_wei(amount, "ether")
 
-    @pytest.mark.mainnet
     @pytest.mark.multipletokens
     def test_create_and_transfer_new_token_from_solana_to_neon(
         self,
@@ -130,7 +129,6 @@ class TestDeposit:
 
         assert int(ata_balance_after.value.amount) == int(ata_balance_before.value.amount) + full_amount
 
-    @pytest.mark.mainnet
     @pytest.mark.multipletokens
     def test_transfer_wrapped_sol_token_from_solana_to_neon(
         self, solana_account, pytestconfig: Config, web3_client_sol
