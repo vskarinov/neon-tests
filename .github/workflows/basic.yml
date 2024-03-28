@@ -20,6 +20,7 @@ on:
           - terraform
           - night-stand
           - devnet
+          - mainnet
       numprocesses:
         type: choice
         default: 8
