@@ -54,7 +54,7 @@ class TestWNeon:
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
         neon_balance_before, wneon_balance_before = self.get_balances(wneon, recipient_account.address)
-        deposit_amount = 0.1 #random.randint(1, 10)
+        deposit_amount = random.randint(1, 10)
         receipt = self.deposit(wneon, deposit_amount, recipient_account)
         assert receipt["status"] == 1
         neon_balance_after, wneon_balance_after = self.get_balances(wneon, recipient_account.address)
