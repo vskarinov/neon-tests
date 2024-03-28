@@ -15,6 +15,7 @@ class TestRpcGetBlock:
     web3_client: NeonChainWeb3Client
     accounts: EthAccounts
 
+    @pytest.mark.mainnet
     @pytest.mark.parametrize("full_trx", [False, True])
     def test_eth_get_block_by_hash(self, full_trx: bool, json_rpc_client):
         """Verify implemented rpc calls work eth_getBlockByHash"""
@@ -43,6 +44,7 @@ class TestRpcGetBlock:
         response = json_rpc_client.send_rpc(method="eth_getBlockByHash", params=[gen_hash_of_block(32), full_trx])
         assert "result" in response and response["result"] is None, "Result should be None"
 
+    @pytest.mark.mainnet
     @pytest.mark.parametrize("full_trx", [False, True])
     def test_eth_get_block_by_number_via_numbers(self, full_trx, json_rpc_client):
         """Verify implemented rpc calls work eth_getBlockByNumber"""

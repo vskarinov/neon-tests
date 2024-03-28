@@ -47,6 +47,7 @@ class TestERC20SPL:
         assert metadata["data"]["symbol"] == erc20_contract.symbol
         assert metadata["is_mutable"] is True
 
+    @pytest.mark.mainnet
     def test_balanceOf(self, erc20_contract):
         recipient_account = self.accounts[1]
         transfer_amount = random.randint(0, 100)
@@ -107,6 +108,7 @@ class TestERC20SPL:
         with pytest.raises(ValueError, match=msg):
             erc20_contract.burn(erc20_contract.account, 1, **param)
 
+    @pytest.mark.mainnet
     def test_burnFrom(self, erc20_contract, restore_balance):
         new_account = self.accounts[0]
         balance_before = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()

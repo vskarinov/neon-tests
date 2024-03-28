@@ -63,6 +63,7 @@ class TestNeonRPCBaseCalls:
             pattern, response["result"]
         ), f"Version format is not correct. Pattern: {pattern}; Response: {response}"
 
+    @pytest.mark.mainnet
     def test_neon_get_solana_transaction_by_neon_transaction(self, event_caller_contract, json_rpc_client, sol_client):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -73,6 +74,7 @@ class TestNeonRPCBaseCalls:
         sol_tx = response["result"][0]
         assert sol_client.wait_transaction(sol_tx) is not None
 
+    @pytest.mark.mainnet
     def test_neon_get_solana_transaction_by_neon_transaction_list_of_tx(self, json_rpc_client, sol_client):
         sender_account = self.accounts[0]
         _, tx_receipt = self.web3_client.deploy_and_get_contract("common/EventCaller", "0.8.12", sender_account)

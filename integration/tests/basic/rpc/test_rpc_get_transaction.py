@@ -47,6 +47,7 @@ class TestRpcGetTransaction:
         assert result["to"].upper() == tx_receipt["to"].upper()
 
     @pytest.mark.parametrize("valid_index", [True, False])
+    @pytest.mark.mainnet
     def test_eth_get_transaction_by_block_number_and_index(self, valid_index: bool, json_rpc_client):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -68,6 +69,7 @@ class TestRpcGetTransaction:
             assert result["value"] == hex(self.web3_client.to_wei(amount, Unit.ETHER))
 
     @pytest.mark.parametrize("valid_index", [True, False])
+    @pytest.mark.mainnet
     def test_eth_get_transaction_by_block_hash_and_index(self, valid_index: bool, json_rpc_client):
         """Verify implemented rpc calls work eth_getTransactionByBlockHashAndIndex"""
         sender_account = self.accounts[0]
@@ -87,6 +89,7 @@ class TestRpcGetTransaction:
             self.validate_response(result, tx_receipt)
 
     @pytest.mark.parametrize("tag", [Tag.LATEST.value, Tag.EARLIEST.value, "param"])
+    @pytest.mark.mainnet
     def test_eth_get_transaction_by_block_number_and_index_by_tag(self, tag: str, json_rpc_client):
         """Verify implemented rpc calls work eth_getTransactionByBlockNumberAndIndex"""
         sender_account = self.accounts[0]
@@ -130,6 +133,7 @@ class TestRpcGetTransaction:
         assert response["error"]["message"] == "transaction-id is not hex"
 
     @pytest.mark.parametrize("param", [Tag.LATEST, Tag.PENDING, Tag.EARLIEST, None])
+    @pytest.mark.mainnet
     def test_eth_get_transaction_count(self, param: tp.Union[Tag, None], json_rpc_client):
         """Verify implemented rpc calls work eth_getTransactionCount"""
         sender_account = self.accounts[0]
@@ -169,6 +173,7 @@ class TestRpcGetTransaction:
         assert code == Error32602.CODE, "wrong code"
         assert Error32602.NOT_HEX in message, "wrong message"
 
+    @pytest.mark.mainnet
     def test_eth_get_transaction_by_hash(self, json_rpc_client):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -190,6 +195,7 @@ class TestRpcGetTransaction:
             {"hash": "transactionHash"},
         )
 
+    @pytest.mark.mainnet
     @pytest.mark.parametrize("method", ["neon_getTransactionReceipt", "eth_getTransactionReceipt"])
     def test_get_transaction_receipt(self, method, json_rpc_client):
         """Verify implemented rpc calls work with neon_getTransactionReceipt and eth_getTransactionReceipt"""
@@ -263,6 +269,7 @@ class TestRpcGetTransaction:
         assert "error" not in response
         assert response["result"] is None
 
+    @pytest.mark.mainnet
     def test_neon_get_transaction_by_sender_nonce(self, json_rpc_client):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
