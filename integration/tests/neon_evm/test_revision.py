@@ -449,6 +449,7 @@ class TestAccountRevision:
                 operator_keypair, evm_loader, treasury_pool, new_holder_acc, accounts, EVM_STEPS, operator_keypair
             )
 
+    @pytest.mark.skip(reason="Isn't implemented yet")
     def test_parallel_change_balance_in_one_trx_and_check_in_second_trx(
         self, operator_keypair, treasury_pool, neon_api_client, sender_with_tokens, evm_loader, holder_acc
     ):

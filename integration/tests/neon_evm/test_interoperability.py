@@ -44,7 +44,7 @@ from integration.tests.neon_evm.utils.instructions import (
     serialize_instruction
 )
 from integration.tests.neon_evm.utils.layouts import COUNTER_ACCOUNT_LAYOUT
-from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text
+from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text, decode_logs
 
 from utils.instructions import DEFAULT_UNITS
 from utils.metaplex import ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, TOKEN_PROGRAM_ID
@@ -355,7 +355,7 @@ class TestInteroperability:
             [solana_caller.contract.eth_address, calldata],
         )
 
-        with pytest.raises(RPCException, match="Some error"):
+        try:
             resp = execute_trx_from_instruction_with_solana_call(
                 operator_keypair,
                 evm_loader,
@@ -375,6 +375,10 @@ class TestInteroperability:
                 ],
                 operator_keypair,
             )
+        except RPCException as err:
+            assert "static mode violation" in decode_logs(err.args[0].data.logs)
+        else:
+            assert False, f"Expected error but got {resp}"
 
     def test_call_neon_instruction_by_neon_instruction(
         self,
@@ -403,11 +407,15 @@ class TestInteroperability:
             ],
         )
 
-        resp = solana_caller.batch_execute(
-            [
-                (evm_loader.loader_id, 0, neon_instruction),
-            ],
-            sender_with_tokens,
-            additional_signers=[sender_with_tokens.solana_account],
-        )
-        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+        try:
+            resp = solana_caller.batch_execute(
+                [
+                    (evm_loader.loader_id, 0, neon_instruction),
+                ],
+                sender_with_tokens,
+                additional_signers=[sender_with_tokens.solana_account],
+            )
+        except RPCException as err:
+            assert "Program not allowed to call itself" in decode_logs(err.args[0].data.logs)
+        else:
+            assert False, f"Expected error but got {resp}"
