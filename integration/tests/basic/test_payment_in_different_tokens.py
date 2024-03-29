@@ -128,7 +128,7 @@ class TestMultiplyChains:
     def test_eip1820_sol_network(self, alice, bob, web3_client_sol):
         neon_balance_before = self.web3_client.get_balance(alice)
         sol_balance_before = web3_client_sol.get_balance(alice)
-        instruction_tx = web3_client_sol.make_raw_tx(alice.address, bob.address, 1000000, estimate_gas=True)
+        instruction_tx = self.web3_client.make_raw_tx(alice.address, bob.address, 1000000, estimate_gas=True)
         instruction_tx.pop("chainId")
         receipt = web3_client_sol.send_transaction(alice, instruction_tx)
         assert receipt["status"] == 1
