@@ -186,6 +186,25 @@ def run_openzeppelin_tests(network, jobs=8, amount=20000, users=8):
     log_dir = cwd.parent / "results"
     log_dir.mkdir(parents=True, exist_ok=True)
 
+    # Compile contracts
+    start_time = time.time()
+    out = subprocess.run(
+        f"npx hardhat clean && npx hardhat compile",
+        shell=True,
+        cwd=cwd,
+        capture_output=True,
+    )
+    end_time = time.time()
+    stdout = out.stdout.decode()
+    stderr = out.stderr.decode()
+    time_info = time_measure(start_time=start_time, end_time=end_time, job_name="compile contracts")
+    print(stdout)
+    print(stderr)
+    print(time_info)
+
+    with open(log_dir / "time.log", "w") as f:
+        f.write(time_info)
+
     tests = list(Path(f"{cwd}/test").rglob("*.test.js"))
     priority_names = [
         "test/token/ERC721/ERC721.test.js",
@@ -215,7 +234,8 @@ def run_openzeppelin_tests(network, jobs=8, amount=20000, users=8):
 
         start_time = time.time()
         out = subprocess.run(
-            f"npx --node-options='--max-old-space-size=8192' hardhat test {file_name}",
+            f"npx hardhat test {file_name}",
+            # f"npx --node-options='--max-old-space-size=4096' hardhat test {file_name}",
             shell=True,
             cwd=cwd,
             capture_output=True,
