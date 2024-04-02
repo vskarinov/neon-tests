@@ -12,7 +12,6 @@ on:
         description: "Stand name"
         options:
           - night-stand
-          - devnet
           - terraform
 
 env:
@@ -37,11 +36,11 @@ jobs:
     runs-on: ubuntu-20.04
     if: always()
     steps:
-      - name: Setup `night-stand` by cron schedule
-        id: setup_night_stand
+      - name: Setup `terraform` by cron schedule
+        id: setup_network
         if: github.event.schedule=='0 6 * * *'
         run: |
-          echo "NETWORK=night-stand" >> $GITHUB_ENV
+          echo "NETWORK=terraform" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - name: "Prepare terraform stand"
         id: prepare_terraform
