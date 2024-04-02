@@ -56,7 +56,10 @@ services:
     container_name: proxy
     environment:
       SOLANA_URL: $SOLANA_URL
-      CONST_GAS_PRICE: 2
+      CONST_GAS_PRICE: -1
+      MINIMAL_GAS_PRICE: 0
+      PYTH_MAPPING_ACCOUNT: BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2 # devnet
+      PP_SOLANA_URL: https://api.devnet.solana.com
       EXTRA_ARGS: "--num-workers 16"
     ports:
       - "9090:9090"
