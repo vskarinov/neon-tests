@@ -180,27 +180,16 @@ def erc20_spl(
     eth_bank_account,
 ):
     symbol = "".join([random.choice(string.ascii_uppercase) for _ in range(3)])
-    if pytestconfig.getoption("--network") == "mainnet":
-        erc20 = ERC20Wrapper(
-            web3_client_session,
-            faucet,
-            f"Test {symbol}",
-            symbol,
-            sol_client_session,
-            solana_account=solana_account,
-            mintable=False,
-            bank_account=eth_bank_account,
-        )
-    else:
-        erc20 = ERC20Wrapper(
-            web3_client_session,
-            faucet,
-            f"Test {symbol}",
-            symbol,
-            sol_client_session,
-            solana_account=solana_account,
-            mintable=False,
-            evm_loader_id=pytestconfig.environment.evm_loader,
+    erc20 = ERC20Wrapper(
+        web3_client_session,
+        faucet,
+        f"Test {symbol}",
+        symbol,
+        sol_client_session,
+        solana_account=solana_account,
+        mintable=False,
+        bank_account=eth_bank_account,
+        evm_loader_id=pytestconfig.environment.evm_loader,
     )
     erc20.token_mint.approve(
         source=erc20.solana_associated_token_acc,
@@ -216,19 +205,24 @@ def erc20_spl(
 
     erc20.claim(erc20.account, bytes(erc20.solana_associated_token_acc), 100000000000000)
     yield erc20
-    balance = web3_client_session.get_balance(erc20.owner)
-    web3_client_session.send_neon(erc20.owner.address, eth_bank_account, balance)
+    if pytestconfig.getoption("--network") == "mainnet":
+        balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.account.address), Unit.ETHER))
+        print("Balance erc20_spl before cleanup", balance)
+        if balance > 1:
+            web3_client_session.send_neon(from_=erc20.account, to=eth_bank_account, amount=balance - 1)
 
 
 @pytest.fixture(scope="session")
 def erc20_simple(web3_client_session, faucet, pytestconfig: Config, eth_bank_account):
-    if pytestconfig.getoption("--network") == "mainnet":
+    network = pytestconfig.getoption("--network")
+    if network == "mainnet":
         erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account)
     else:
         erc20 = ERC20(web3_client_session, faucet)
     yield erc20
-    balance = web3_client_session.get_balance(erc20.owner)
-    web3_client_session.send_neon(erc20.owner.address, eth_bank_account, balance)
+    if network == "mainnet":
+        balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.owner), Unit.ETHER))
+        web3_client_session.send_neon(erc20.owner, eth_bank_account, balance - 1)
 
 
 @pytest.fixture(scope="session")
@@ -241,32 +235,23 @@ def erc20_spl_mintable(
     eth_bank_account,
 ):
     symbol = "".join([random.choice(string.ascii_uppercase) for _ in range(3)])
-    if pytestconfig.getoption("--network") == "mainnet":
-        erc20 = ERC20Wrapper(
-            web3_client_session,
-            faucet,
-            f"Test {symbol}",
-            symbol,
-            sol_client_session,
-            solana_account=solana_account,
-            mintable=True,
-            bank_account=eth_bank_account,
-        )
-    else:
-        erc20 = ERC20Wrapper(
-            web3_client_session,
-            faucet,
-            f"Test {symbol}",
-            symbol,
-            sol_client_session,
-            solana_account=solana_account,
-            mintable=True,
-        )
+    erc20 = ERC20Wrapper(
+        web3_client_session,
+        faucet,
+        f"Test {symbol}",
+        symbol,
+        sol_client_session,
+        solana_account=solana_account,
+        mintable=True,
+        bank_account=eth_bank_account,
+    )
     erc20.mint_tokens(erc20.account, erc20.account.address)
     yield erc20
-    balance = web3_client_session.get_balance(erc20.owner)
-    web3_client_session.send_neon(erc20.owner.address, eth_bank_account, balance)
-
+    if pytestconfig.getoption("--network") == "mainnet":
+        balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.account.address), Unit.ETHER))
+        print("Balance erc20_spl mintable before cleanup", balance)
+        if balance > 1:
+            web3_client_session.send_neon(from_=erc20.account, to=eth_bank_account, amount=balance - 1)
 
 @pytest.fixture(scope="class")
 def class_account_sol_chain(

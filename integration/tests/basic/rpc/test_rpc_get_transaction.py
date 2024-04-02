@@ -51,7 +51,7 @@ class TestRpcGetTransaction:
     def test_eth_get_transaction_by_block_number_and_index(self, valid_index: bool, json_rpc_client):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
-        amount = 10
+        amount = 1
         """Verify implemented rpc calls work eth_getTransactionByBlockNumberAndIndex"""
         tx_receipt = self.web3_client.send_neon(sender_account, recipient_account, amount=amount)
         transaction_index = hex(tx_receipt.transactionIndex) if valid_index else hex(999)
@@ -74,7 +74,7 @@ class TestRpcGetTransaction:
         """Verify implemented rpc calls work eth_getTransactionByBlockHashAndIndex"""
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
-        tx_receipt = self.web3_client.send_neon(sender_account, recipient_account, 10)
+        tx_receipt = self.web3_client.send_neon(sender_account, recipient_account, 1)
         transaction_index = hex(tx_receipt.transactionIndex) if valid_index else hex(999)
         response = json_rpc_client.send_rpc(
             method="eth_getTransactionByBlockHashAndIndex",
@@ -94,7 +94,8 @@ class TestRpcGetTransaction:
         """Verify implemented rpc calls work eth_getTransactionByBlockNumberAndIndex"""
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
-        tx_receipt = self.web3_client.send_neon(sender_account, recipient_account, 10)
+
+        tx_receipt = self.web3_client.send_neon(sender_account, recipient_account, 1)
         response = json_rpc_client.send_rpc(
             method="eth_getTransactionByBlockNumberAndIndex",
             params=[tag, hex(tx_receipt.transactionIndex)],
@@ -201,7 +202,7 @@ class TestRpcGetTransaction:
         """Verify implemented rpc calls work with neon_getTransactionReceipt and eth_getTransactionReceipt"""
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
-        tx_receipt = self.web3_client.send_neon(sender_account, recipient_account, 10)
+        tx_receipt = self.web3_client.send_neon(sender_account, recipient_account, 1)
         transaction_hash = tx_receipt.transactionHash.hex()
         params = [transaction_hash]
         if method.startswith("neon_"):
@@ -273,7 +274,6 @@ class TestRpcGetTransaction:
     def test_neon_get_transaction_by_sender_nonce(self, json_rpc_client):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
-
         nonce = self.web3_client.get_nonce(sender_account)
         receipt = self.web3_client.send_neon(sender_account, recipient_account, amount=0.1)
         response = json_rpc_client.send_rpc(

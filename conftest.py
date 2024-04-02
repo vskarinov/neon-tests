@@ -187,6 +187,12 @@ def faucet(pytestconfig: Config, web3_client_session) -> Faucet:
 
 
 @pytest.fixture(scope="session")
-def accounts_session(web3_client_session, faucet, eth_bank_account):
+def accounts_session(pytestconfig: Config, web3_client_session, faucet, eth_bank_account):
     accounts = EthAccounts(web3_client_session, faucet, eth_bank_account)
     yield accounts
+    if pytestconfig.getoption("--network") == "mainnet":
+         if len(accounts.accounts_collector) > 0:
+            for item in accounts.accounts_collector:
+                print(f"Account: {item.address} restore balance running")
+                balance = web3_client_session.get_balance(item.address)
+                web3_client_session.send_all_tokens_from_account(item, eth_bank_account, balance)

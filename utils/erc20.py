@@ -21,9 +21,9 @@ class ERC20:
         if self.owner is None:
             self.owner = web3_client.create_account()
             if bank_account is not None:
-                web3_client.send_neon(bank_account, self.owner.address, 300)
+                web3_client.send_neon(bank_account, self.owner.address, 50)
             else:
-                faucet.request_neon(self.owner.address, 300)
+                faucet.request_neon(self.owner.address, 50)
         self.initial_balance = amount
         self.contract = self.deploy(name, symbol)
 
