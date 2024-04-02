@@ -9,7 +9,6 @@ import typing as tp
 import allure
 import base58
 import pytest
-import logging
 from _pytest.config import Config
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
@@ -25,7 +24,6 @@ from utils.web3client import NeonChainWeb3Client, Web3Client
 from utils.prices import get_sol_price, get_neon_price
 from utils.transfers_inter_networks import token_from_solana_to_neon_tx
 
-LOG = logging.getLogger(__name__)
 NEON_AIRDROP_AMOUNT = 1_000
 
 
@@ -145,7 +143,11 @@ def eth_bank_account(pytestconfig: Config, web3_client_session) -> tp.Optional[K
         account = web3_client_session.eth.account.from_key(pytestconfig.environment.eth_bank_account)
     if pytestconfig.getoption("--network") == "mainnet":
         account = web3_client_session.eth.account.from_key(os.environ.get("ETH_BANK_PRIVATE_KEY_MAINNET"))
+    balance_before = web3_client_session.get_balance(account.address)
+    print(f"ETH bank account balance before tests: {balance_before}")
     yield account
+    balance = web3_client_session.get_balance(account.address)
+    print(f"ETH bank account balance after tests: {balance}")
 
 
 @pytest.fixture(scope="session")
@@ -172,9 +174,9 @@ def accounts(request, accounts_session, web3_client_session, pytestconfig: Confi
     if pytestconfig.getoption("--network") == "mainnet":
         if len(accounts_session.accounts_collector) > 0:
             for item in accounts_session.accounts_collector:
-                LOG.info(f"Restoring eth account balance from {item.privateKey} account")
-                balance = web3_client_session.get_balance(item.address)
-                web3_client_session.send_all_tokens_from_account(item, eth_bank_account, balance)
+                with allure.step(f"Restoring eth account balance from {item.key.hex()} account"):
+                    balance = web3_client_session.get_balance(item.address)
+                    web3_client_session.send_all_tokens_from_account(item, eth_bank_account, balance)
     accounts_session._accounts = []
 
 
@@ -186,6 +188,7 @@ def erc20_spl(
     sol_client_session,
     solana_account,
     eth_bank_account,
+    accounts_session,
 ):
     symbol = "".join([random.choice(string.ascii_uppercase) for _ in range(3)])
     erc20 = ERC20Wrapper(
@@ -197,6 +200,7 @@ def erc20_spl(
         solana_account=solana_account,
         mintable=False,
         bank_account=eth_bank_account,
+        account=accounts_session[0],
         evm_loader_id=pytestconfig.environment.evm_loader,
     )
     erc20.token_mint.approve(
@@ -213,24 +217,21 @@ def erc20_spl(
 
     erc20.claim(erc20.account, bytes(erc20.solana_associated_token_acc), 100000000000000)
     yield erc20
-    if pytestconfig.getoption("--network") == "mainnet":
-        balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.account.address), Unit.ETHER))
-        if balance > 2:
-            web3_client_session.send_neon(from_=erc20.account, to=eth_bank_account, amount=balance - 1)
 
 
 @pytest.fixture(scope="session")
-def erc20_simple(web3_client_session, faucet, pytestconfig: Config, eth_bank_account):
+def erc20_simple(web3_client_session, 
+                 faucet, 
+                 accounts_session, 
+                 pytestconfig: Config, 
+                 eth_bank_account
+):
     network = pytestconfig.getoption("--network")
     if network == "mainnet":
-        erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account)
+        erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0])
     else:
         erc20 = ERC20(web3_client_session, faucet)
     yield erc20
-    if network == "mainnet":
-        balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.owner), Unit.ETHER))
-        if balance > 2:
-            web3_client_session.send_neon(erc20.owner, eth_bank_account, balance - 1)
 
 
 @pytest.fixture(scope="session")
@@ -239,7 +240,7 @@ def erc20_spl_mintable(
     faucet, 
     sol_client_session, 
     solana_account, 
-    pytestconfig: Config, 
+    accounts_session,
     eth_bank_account,
 ):
     symbol = "".join([random.choice(string.ascii_uppercase) for _ in range(3)])
@@ -252,13 +253,10 @@ def erc20_spl_mintable(
         solana_account=solana_account,
         mintable=True,
         bank_account=eth_bank_account,
+        account=accounts_session[0],
     )
     erc20.mint_tokens(erc20.account, erc20.account.address)
     yield erc20
-    if pytestconfig.getoption("--network") == "mainnet":
-        balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.account.address), Unit.ETHER))
-        if balance > 2:
-            web3_client_session.send_neon(from_=erc20.account, to=eth_bank_account, amount=balance - 1)
 
 @pytest.fixture(scope="class")
 def class_account_sol_chain(

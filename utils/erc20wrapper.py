@@ -38,10 +38,11 @@ class ERC20Wrapper:
             self.account = web3_client.create_account()
             if bank_account is not None:
                 web3_client.send_neon(bank_account, self.account.address, 50)
-                balance = web3_client.get_balance(self.account.address)
-                print("Contract balance after send neon from bank: ", balance)
             else:
                 faucet.request_neon(self.account.address, 50)
+        else:          
+            if bank_account is not None:
+                web3_client.send_neon(bank_account, self.account.address, 40)
         self.name = name
         self.symbol = symbol
         self.decimals = decimals
