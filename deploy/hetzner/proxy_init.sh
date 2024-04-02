@@ -58,8 +58,8 @@ services:
       SOLANA_URL: $SOLANA_URL
       CONST_GAS_PRICE: -1
       MINIMAL_GAS_PRICE: 0
-      PYTH_MAPPING_ACCOUNT: BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2 # devnet
-      PP_SOLANA_URL: https://qa-devnet.sol-rpc.neoninfra.xyz:8523/fTpmQaTPb1aQYw882LTqUaIAspBMhOW3HXVqchVi/
+      PYTH_MAPPING_ACCOUNT: "BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2"
+      PP_SOLANA_URL: "https://qa-devnet.sol-rpc.neoninfra.xyz:8523/fTpmQaTPb1aQYw882LTqUaIAspBMhOW3HXVqchVi/"
       EXTRA_ARGS: "--num-workers 16"
     ports:
       - "9090:9090"
