@@ -163,10 +163,15 @@ def solana_account(bank_account, pytestconfig: Config, sol_client_session):
 
 
 @pytest.fixture(scope="class")
-def accounts(request, accounts_session):
+def accounts(request, accounts_session, web3_client_session, pytestconfig: Config):
     if inspect.isclass(request.cls):
         request.cls.accounts = accounts_session
     yield accounts_session
+    if pytestconfig.getoption("--network") == "mainnet":
+        if len(accounts_session.accounts_collector) > 0:
+            for item in accounts_session.accounts_collector:
+                balance = web3_client_session.get_balance(item.address)
+                web3_client_session.send_all_tokens_from_account(item, eth_bank_account, balance)
     accounts_session._accounts = []
 
 
