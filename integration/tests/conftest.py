@@ -9,6 +9,7 @@ import typing as tp
 import allure
 import base58
 import pytest
+import logging
 from _pytest.config import Config
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
@@ -24,6 +25,7 @@ from utils.web3client import NeonChainWeb3Client, Web3Client
 from utils.prices import get_sol_price, get_neon_price
 from utils.transfers_inter_networks import token_from_solana_to_neon_tx
 
+LOG = logging.getLogger(__name__)
 NEON_AIRDROP_AMOUNT = 1_000
 
 
@@ -170,6 +172,7 @@ def accounts(request, accounts_session, web3_client_session, pytestconfig: Confi
     if pytestconfig.getoption("--network") == "mainnet":
         if len(accounts_session.accounts_collector) > 0:
             for item in accounts_session.accounts_collector:
+                LOG.info(f"Restoring eth account balance from {item.privateKey} account")
                 balance = web3_client_session.get_balance(item.address)
                 web3_client_session.send_all_tokens_from_account(item, eth_bank_account, balance)
     accounts_session._accounts = []
@@ -212,7 +215,6 @@ def erc20_spl(
     yield erc20
     if pytestconfig.getoption("--network") == "mainnet":
         balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.account.address), Unit.ETHER))
-        print("Balance erc20_spl before cleanup", balance)
         if balance > 1:
             web3_client_session.send_neon(from_=erc20.account, to=eth_bank_account, amount=balance - 1)
 
@@ -254,7 +256,6 @@ def erc20_spl_mintable(
     yield erc20
     if pytestconfig.getoption("--network") == "mainnet":
         balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.account.address), Unit.ETHER))
-        print("Balance erc20_spl mintable before cleanup", balance)
         if balance > 1:
             web3_client_session.send_neon(from_=erc20.account, to=eth_bank_account, amount=balance - 1)
 
