@@ -1,24 +1,19 @@
 import allure
 import pytest
+import spl
+from solana.keypair import Keypair
 from solana.publickey import PublicKey
+from solana.rpc.commitment import Confirmed
+from solana.rpc.types import TxOpts
 from solana.transaction import TransactionInstruction, AccountMeta
+from spl.token.constants import TOKEN_PROGRAM_ID
 
 from utils.accounts import EthAccounts
-from utils.helpers import solana_pubkey_to_bytes32
+from utils.consts import COUNTER_ID, COMPUTE_BUDGET_ID
+from utils.instructions import serialize_instruction
 from utils.web3client import NeonChainWeb3Client
 
 
-def serialize_instruction(program_id, instruction) -> bytes:
-    program_id_bytes = solana_pubkey_to_bytes32(PublicKey(program_id))
-    serialized = program_id_bytes + len(instruction.keys).to_bytes(8, "little")
-
-    for key in instruction.keys:
-        serialized += bytes(key.pubkey)
-        serialized += key.is_signer.to_bytes(1, "little")
-        serialized += key.is_writable.to_bytes(1, "little")
-
-    serialized += len(instruction.data).to_bytes(8, "little") + instruction.data
-    return serialized
 
 
 @allure.feature("")
@@ -31,9 +26,7 @@ class TestSolanaInteroperability:
     @pytest.fixture(scope="class")
     def call_solana_caller(self):
         contract, _ = self.web3_client.deploy_and_get_contract(
-            "precompiled/CallSolanaCaller.sol",
-            "0.8.10",
-            self.accounts[0]
+            "precompiled/CallSolanaCaller.sol", "0.8.10", self.accounts[0]
         )
         return contract
 
@@ -47,15 +40,16 @@ class TestSolanaInteroperability:
 
     def test_counter(self, call_solana_caller):
         sender = self.accounts[0]
-        COUNTER_ID = PublicKey("4RJAXLPq1HrXWP4zFrMhvB5drrzqrRFwaRVNUnALcaeh")
 
         resource_addr = self.create_resource(call_solana_caller, "1", sender, COUNTER_ID)
         lamports = 0
 
         instruction = TransactionInstruction(
             program_id=COUNTER_ID,
-            keys=[AccountMeta(resource_addr, is_signer=False, is_writable=True), ],
-            data=bytes([0x1])
+            keys=[
+                AccountMeta(resource_addr, is_signer=False, is_writable=True),
+            ],
+            data=bytes([0x1]),
         )
         serialized = serialize_instruction(COUNTER_ID, instruction)
 
@@ -67,7 +61,6 @@ class TestSolanaInteroperability:
     def test_compute_budget(self, call_solana_caller):
         sender = self.accounts[0]
         solana_acc = call_solana_caller.functions.getNeonAddress(sender.address).call()
-        COMPUTE_BUDGET_ID = PublicKey("ComputeBudget111111111111111111111111111111")
 
         DEFAULT_UNITS = 1_400_000
         lamports = 0
@@ -83,3 +76,57 @@ class TestSolanaInteroperability:
         instruction_tx = call_solana_caller.functions.execute(lamports, serialized).build_transaction(tx)
         resp = self.web3_client.send_transaction(sender, instruction_tx)
         assert resp["status"] == 1
+
+
+    def test_transfer_with_pda_signature(self, call_solana_caller, sol_client, solana_account):
+        TRANSFER_TOKENS_ID = PublicKey("BFsGPJUwgE1rz4eoL322HaKZYNZ5wDLafwYtKwomv2XF")
+        sender = self.accounts[0]
+        from_wallet = Keypair.generate()
+        to_wallet = Keypair.generate()
+        amount = 100000
+        sol_client.request_airdrop(from_wallet.public_key, 1000 * 10**9, commitment=Confirmed)
+
+        mint = spl.token.client.Token.create_mint(
+            conn=sol_client,
+            payer=from_wallet,
+            mint_authority=from_wallet.public_key,
+            decimals=9,
+            program_id=TOKEN_PROGRAM_ID,
+        )
+        mint.payer = from_wallet
+        from_token_account = mint.create_associated_token_account(from_wallet.public_key)
+        to_token_account = mint.create_associated_token_account(to_wallet.public_key)
+        mint.mint_to(
+            dest=from_token_account,
+            mint_authority=from_wallet,
+            amount=amount,
+            opts=TxOpts(skip_confirmation=False, skip_preflight=True),
+        )
+
+        authority_pubkey = call_solana_caller.functions.getSolanaPDA(bytes(TRANSFER_TOKENS_ID), b"authority").call()
+        mint.set_authority(
+            from_token_account,
+            from_wallet,
+            spl.token.instructions.AuthorityType.ACCOUNT_OWNER,
+            authority_pubkey,
+            opts=TxOpts(skip_confirmation=False, skip_preflight=True),
+        )
+
+        instruction = TransactionInstruction(
+            program_id=TRANSFER_TOKENS_ID,
+            keys=[
+                AccountMeta(from_token_account, is_signer=False, is_writable=True),
+                AccountMeta(mint.pubkey, is_signer=False, is_writable=True),
+                AccountMeta(to_token_account, is_signer=False, is_writable=True),
+                AccountMeta(authority_pubkey, is_signer=False, is_writable=True),
+                AccountMeta(TOKEN_PROGRAM_ID, is_signer=False, is_writable=True),
+            ],
+            data=bytes([0x0]),
+        )
+        serialized = serialize_instruction(TRANSFER_TOKENS_ID, instruction)
+
+        tx = self.web3_client.make_raw_tx(sender.address)
+        instruction_tx = call_solana_caller.functions.execute(0, serialized).build_transaction(tx)
+        resp = self.web3_client.send_transaction(sender, instruction_tx)
+        assert resp["status"] == 1
+        assert int(mint.get_balance(to_token_account, commitment=Confirmed).value.amount) == amount

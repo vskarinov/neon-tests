@@ -9,6 +9,7 @@ from solana.rpc.commitment import Confirmed
 from solana.rpc.core import RPCException
 from solana.rpc.types import TxOpts
 import spl.token.client
+from solana.system_program import SYS_PROGRAM_ID
 from solana.transaction import TransactionInstruction, AccountMeta
 from spl.token.instructions import create_associated_token_account, TransferParams, transfer
 
@@ -19,18 +20,15 @@ from integration.tests.neon_evm.solana_utils import (
 )
 from integration.tests.neon_evm.types.types import Caller
 from integration.tests.neon_evm.utils.call_solana import SolanaCaller
-from integration.tests.neon_evm.utils.constants import (
-    COMPUTE_BUDGET_ID,
-    MEMO_PROGRAM_ID,
-    SOLANA_CALL_PRECOMPILED_ID,
-    NEON_TOKEN_MINT_ID,
-    COUNTER_ID, SYSTEM_ADDRESS, TRANSFER_SOL_ID, TRANSFER_TOKENS_ID,
-)
+from integration.tests.neon_evm.utils.constants import NEON_TOKEN_MINT_ID
+
 from integration.tests.neon_evm.utils.contract import deploy_contract
 from integration.tests.neon_evm.utils.ethereum import make_eth_transaction
 from integration.tests.neon_evm.utils.instructions import make_CreateAssociatedTokenIdempotent
 from integration.tests.neon_evm.utils.layouts import COUNTER_ACCOUNT_LAYOUT
 from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text
+from utils.consts import MEMO_PROGRAM_ID, COMPUTE_BUDGET_ID, SOLANA_CALL_PRECOMPILED_ID, COUNTER_ID, TRANSFER_SOL_ID, \
+    TRANSFER_TOKENS_ID
 
 from utils.instructions import DEFAULT_UNITS
 from utils.metaplex import ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, TOKEN_PROGRAM_ID
@@ -184,7 +182,7 @@ class TestInteroperability:
             program_id=TRANSFER_SOL_ID,
             keys=[AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
                   AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
-                  AccountMeta(PublicKey(SYSTEM_ADDRESS), is_signer=False, is_writable=False),
+                  AccountMeta(SYS_PROGRAM_ID, is_signer=False, is_writable=False),
                   ],
             data=bytes([0x0]) + amount.to_bytes(8, "little")
         )

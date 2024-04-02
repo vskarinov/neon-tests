@@ -44,6 +44,7 @@ class SolanaClient(solana.rpc.api.Client):
         airdrop_resp = None
         for _ in range(5):
             airdrop_resp = super().request_airdrop(pubkey, lamports, commitment=Finalized)
+            print(airdrop_resp)
             if isinstance(airdrop_resp, InternalErrorMessage):
                 time.sleep(10)
                 print(f"Get error from solana airdrop: {airdrop_resp}")
