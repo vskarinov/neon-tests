@@ -56,6 +56,7 @@ services:
     container_name: proxy
     environment:
       SOLANA_URL: $SOLANA_URL
+      CONST_GAS_PRICE: -1
       EXTRA_ARGS: "--num-workers 16"
     ports:
       - "9090:9090"
@@ -93,7 +94,7 @@ function wait_service() {
   local DATA=$3
   local RESULT=$4
 
-  # Max attepts is 100 (each for 2 seconds)
+  # Max attempts is 100 (each for 2 seconds)
   local MAX_COUNT=100
   local CURRENT_ATTEMPT=1
 

@@ -7,7 +7,7 @@ on:
     inputs:
       network:
         type: choice
-        default: night-stand
+        default: terraform
         required: true
         description: "Stand name"
         options:
