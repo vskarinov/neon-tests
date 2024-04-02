@@ -94,7 +94,7 @@ class TestRpcGetBlock:
         """Verify implemented rpc calls work eth_getBlockByNumber"""
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
-        self.web3_client.send_neon(sender_account, recipient_account, 10)
+        self.web3_client.send_neon(sender_account, recipient_account, 1)
         params = [quantity_tag.value, full_trx]
         response = json_rpc_client.send_rpc(method="eth_getBlockByNumber", params=params)
         rpc_checks.assert_block_fields(response, full_trx, None, quantity_tag == Tag.PENDING)
