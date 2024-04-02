@@ -215,7 +215,7 @@ def erc20_spl(
     yield erc20
     if pytestconfig.getoption("--network") == "mainnet":
         balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.account.address), Unit.ETHER))
-        if balance > 1:
+        if balance > 2:
             web3_client_session.send_neon(from_=erc20.account, to=eth_bank_account, amount=balance - 1)
 
 
@@ -229,7 +229,8 @@ def erc20_simple(web3_client_session, faucet, pytestconfig: Config, eth_bank_acc
     yield erc20
     if network == "mainnet":
         balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.owner), Unit.ETHER))
-        web3_client_session.send_neon(erc20.owner, eth_bank_account, balance - 1)
+        if balance > 2:
+            web3_client_session.send_neon(erc20.owner, eth_bank_account, balance - 1)
 
 
 @pytest.fixture(scope="session")
@@ -256,7 +257,7 @@ def erc20_spl_mintable(
     yield erc20
     if pytestconfig.getoption("--network") == "mainnet":
         balance = float(web3_client_session.from_wei(web3_client_session.get_balance(erc20.account.address), Unit.ETHER))
-        if balance > 1:
+        if balance > 2:
             web3_client_session.send_neon(from_=erc20.account, to=eth_bank_account, amount=balance - 1)
 
 @pytest.fixture(scope="class")
