@@ -894,9 +894,9 @@ def deploy(current_branch, head_branch, base_branch):
         faucet_tag = head_branch if is_branch_exist(FAUCET_GITHUB_URL, head_branch) else ""
 
     if re.match(VERSION_BRANCH_TEMPLATE, base_branch):
-        version_branch = re.match(VERSION_BRANCH_TEMPLATE, base_branch)
+        version_branch = re.match(VERSION_BRANCH_TEMPLATE, base_branch)[0]
     elif re.match(VERSION_BRANCH_TEMPLATE, current_branch):
-        version_branch = re.match(VERSION_BRANCH_TEMPLATE, current_branch)
+        version_branch = re.match(VERSION_BRANCH_TEMPLATE, current_branch)[0]
     else:
         version_branch = None
 
@@ -906,6 +906,7 @@ def deploy(current_branch, head_branch, base_branch):
         faucet_tag = (
             version_branch if is_branch_exist(FAUCET_GITHUB_URL, version_branch) and not faucet_tag else faucet_tag
         )
+
 
     proxy_tag = "latest" if not proxy_tag else proxy_tag
     evm_tag = "latest" if not evm_tag else evm_tag
