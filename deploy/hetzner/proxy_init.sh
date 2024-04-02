@@ -56,7 +56,7 @@ services:
     container_name: proxy
     environment:
       SOLANA_URL: $SOLANA_URL
-      CONST_GAS_PRICE: -1
+      CONST_GAS_PRICE: 2
       EXTRA_ARGS: "--num-workers 16"
     ports:
       - "9090:9090"
