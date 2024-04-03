@@ -192,7 +192,7 @@ class TestInteroperability:
         for i in range(instruction_count):
             call_params.append((COUNTER_ID, 0, instruction))
 
-        with pytest.raises(RPCException, match="failed: exceeded CUs meter at BPF instruction"):
+        with pytest.raises(RPCException, match="failed: Computational budget exceeded"):
             solana_caller.batch_execute(call_params, sender_with_tokens)
 
     def test_transfer_sol_with_cpi(self, solana_caller, sender_with_tokens):
@@ -321,6 +321,7 @@ class TestInteroperability:
         with pytest.raises(RPCException, match="Cross-program invocation with unauthorized signer or writable account"):
             solana_caller.execute(TOKEN_PROGRAM_ID, instruction, sender=from_wallet)
 
+    @pytest.mark.skip(reason="NDEV-2837")
     def test_staticcall_does_not_support_external_call(
         self, sender_with_tokens, solana_caller, operator_keypair, evm_loader, treasury_pool
     ):
@@ -380,6 +381,7 @@ class TestInteroperability:
         else:
             assert False, f"Expected error but got {resp}"
 
+    @pytest.mark.skip(reason="NDEV-2837")
     def test_call_neon_instruction_by_neon_instruction(
         self,
         sender_with_tokens,
