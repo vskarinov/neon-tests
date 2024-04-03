@@ -42,7 +42,7 @@ class ERC20Wrapper:
                 faucet.request_neon(self.account.address, 50)
         else:          
             if bank_account is not None:
-                web3_client.send_neon(bank_account, self.account.address, 40)
+                web3_client.send_neon(bank_account, self.account.address, 50)
         self.name = name
         self.symbol = symbol
         self.decimals = decimals
