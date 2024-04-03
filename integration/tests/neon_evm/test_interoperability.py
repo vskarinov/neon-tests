@@ -192,7 +192,7 @@ class TestInteroperability:
         for i in range(instruction_count):
             call_params.append((COUNTER_ID, 0, instruction))
 
-        with pytest.raises(RPCException, match="failed: Computational budget exceeded"):
+        with pytest.raises(RPCException, match=r"failed: exceeded CUs meter at BPF instruction|Computational budget exceeded"):
             solana_caller.batch_execute(call_params, sender_with_tokens)
 
     def test_transfer_sol_with_cpi(self, solana_caller, sender_with_tokens):
