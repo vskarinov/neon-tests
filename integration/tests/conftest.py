@@ -143,11 +143,7 @@ def eth_bank_account(pytestconfig: Config, web3_client_session) -> tp.Optional[K
         account = web3_client_session.eth.account.from_key(pytestconfig.environment.eth_bank_account)
     if pytestconfig.getoption("--network") == "mainnet":
         account = web3_client_session.eth.account.from_key(os.environ.get("ETH_BANK_PRIVATE_KEY_MAINNET"))
-    balance_before = web3_client_session.get_balance(account.address)
-    print(f"ETH bank account balance before tests: {balance_before}")
     yield account
-    balance = web3_client_session.get_balance(account.address)
-    print(f"ETH bank account balance after tests: {balance}")
 
 
 @pytest.fixture(scope="session")
@@ -176,7 +172,8 @@ def accounts(request, accounts_session, web3_client_session, pytestconfig: Confi
             for item in accounts_session.accounts_collector:
                 with allure.step(f"Restoring eth account balance from {item.key.hex()} account"):
                     balance = web3_client_session.get_balance(item.address)
-                    web3_client_session.send_all_tokens_from_account(item, eth_bank_account, balance)
+                    print(f"Restoring eth account balance from {item.key.hex()} account, account balance before: {balance}")
+                    web3_client_session.send_all_neons(item, eth_bank_account)
     accounts_session._accounts = []
 
 
@@ -223,14 +220,9 @@ def erc20_spl(
 def erc20_simple(web3_client_session, 
                  faucet, 
                  accounts_session, 
-                 pytestconfig: Config, 
                  eth_bank_account
 ):
-    network = pytestconfig.getoption("--network")
-    if network == "mainnet":
-        erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0])
-    else:
-        erc20 = ERC20(web3_client_session, faucet)
+    erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0])
     yield erc20
 
 
