@@ -884,7 +884,8 @@ def infra():
 @click.option("--current_branch", help="Branch of neon-tests repository")
 @click.option("--head_branch", default="", help="Feature branch name")
 @click.option("--base_branch", default="", help="Target branch of the pull request")
-def deploy(current_branch, head_branch, base_branch):
+@click.argument("--use-real-price", required=False, type=click.BOOL, default=False)
+def deploy(current_branch, head_branch, base_branch, use_real_price):
     # use feature branch or version tag as tag for proxy, evm and faucet images or use latest
     proxy_tag, evm_tag, faucet_tag = "", "", ""
 
@@ -914,7 +915,7 @@ def deploy(current_branch, head_branch, base_branch):
     evm_branch = evm_tag if evm_tag != "latest" else "develop"
     proxy_branch = proxy_tag if proxy_tag != "latest" else "develop"
 
-    infrastructure.deploy_infrastructure(evm_tag, proxy_tag, faucet_tag, evm_branch, proxy_branch)
+    infrastructure.deploy_infrastructure(evm_tag, proxy_tag, faucet_tag, evm_branch, proxy_branch, use_real_price)
 
 
 @infra.command(name="destroy", help="Destroy test infrastructure")
