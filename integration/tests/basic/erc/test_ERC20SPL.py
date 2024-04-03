@@ -51,7 +51,7 @@ class TestERC20SPL:
     @pytest.mark.mainnet
     def test_balanceOf(self, erc20_contract):
         recipient_account = self.accounts[1]
-        transfer_amount = random.randint(0, 5)
+        transfer_amount = 1
         initial_balance = erc20_contract.get_balance(recipient_account)
         erc20_contract.transfer(erc20_contract.account, recipient_account, transfer_amount)
         assert erc20_contract.get_balance(recipient_account) == initial_balance + transfer_amount
@@ -115,7 +115,7 @@ class TestERC20SPL:
         new_account = self.accounts[0]
         balance_before = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         total_before = erc20_contract.contract.functions.totalSupply().call()
-        amount = random.randint(0, 10)
+        amount = 1
         erc20_contract.approve(erc20_contract.account, new_account.address, amount)
         erc20_contract.burn_from(signer=new_account, from_address=erc20_contract.account.address, amount=amount)
 

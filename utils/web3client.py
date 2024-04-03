@@ -354,7 +354,7 @@ class Web3Client:
         transaction = self.make_raw_tx(
             from_, to, amount=value, gas=gas, gas_price=gas_price, nonce=nonce, estimate_gas=True
         )
-        transaction["value"] = value - web3.types.Wei(transaction["gas"])*web3.types.Wei(transaction["gasPrice"])
+        transaction["value"] = value - web3.types.Wei(transaction["gas"]*transaction["gasPrice"]*1.1)
 
         if transaction["value"] > 0:
             signed_tx = self.eth.account.sign_transaction(transaction, from_.key)
