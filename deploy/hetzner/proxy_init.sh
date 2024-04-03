@@ -56,8 +56,6 @@ services:
     container_name: proxy
     environment:
       SOLANA_URL: $SOLANA_URL
-      CONST_GAS_PRICE: -1
-      MINIMAL_GAS_PRICE: 0
       PYTH_MAPPING_ACCOUNT: "BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2"
       PP_SOLANA_URL: "https://qa-devnet.sol-rpc.neoninfra.xyz:8523/fTpmQaTPb1aQYw882LTqUaIAspBMhOW3HXVqchVi/"
       EXTRA_ARGS: "--num-workers 16"
@@ -86,6 +84,10 @@ EOF
 
 # Get list of services
 SERVICES=$(docker-compose -f docker-compose-ci.yml -f docker-compose-ci.override.yml config --services | grep -vP "solana|gas_tank|neon_test_invoke_program_loader")
+
+
+# remove some variables for economy (test)
+sed -i '/CONST_GAS_PRICE/d' docker-compose-ci.yml
 
 # Pull latest versions
 docker-compose -f docker-compose-ci.yml -f docker-compose-ci.override.yml pull $SERVICES
