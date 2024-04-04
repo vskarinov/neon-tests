@@ -11,8 +11,8 @@ on:
         required: true
         description: "Stand name"
         options:
-          - night-stand
           - terraform
+          - night-stand
 
 env:
   NETWORK: ${{ github.event.inputs.network || 'night-stand' }}

@@ -29,7 +29,7 @@ export NEON_EVM_COMMIT=${neon_evm_commit}
 export FAUCET_COMMIT=${faucet_model_commit}
 export CI_PP_SOLANA_URL=${ci_pp_solana_url}
 export DOCKERHUB_ORG_NAME=${dockerhub_org_name}
-
+export USE_REAL_GAS_PRICE=${use_real_price}
 
 
 # Generate docker-compose override file

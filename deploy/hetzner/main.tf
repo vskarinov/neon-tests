@@ -35,7 +35,7 @@ resource "hcloud_server" "proxy" {
     inline = [
       "echo '${hcloud_server.solana.network.*.ip[0]}' > /tmp/solana_host",
       "chmod a+x /tmp/proxy_init.sh",
-      "sudo $USE_REAL_GAS_PRICE=${var.use_real_price} /tmp/proxy_init.sh"
+      "sudo /tmp/proxy_init.sh"
     ]
   connection {
     type        = "ssh"
