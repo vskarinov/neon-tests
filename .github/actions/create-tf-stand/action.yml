@@ -28,6 +28,7 @@ runs:
         if: ${{ inputs.use_real_price }} == '0'
         shell: bash
         run: |
+          echo "USE PRICE: ${{ inputs.use_real_price }}"
           ssh_key='/tmp/ci-stands'
           echo "${{ inputs.ci_stands_key_hcloud  }}" >> ${ssh_key} && chmod 400 ${ssh_key}
           python3 ./clickfile.py infra deploy --current_branch ${{ github.ref_name}} --head_branch ${{ github.head_ref }} --base_branch ${{ github.base_ref }}
