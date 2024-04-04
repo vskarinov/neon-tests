@@ -25,7 +25,7 @@ runs:
         uses: ./.github/actions/python-requirements
       - name: Deploy stand with terraform
         id: deploy
-        if: ${{ inputs.use_real_price }} == '0'
+        if: inputs.use_real_price == '0'
         shell: bash
         run: |
           echo "USE PRICE: ${{ inputs.use_real_price }}"
@@ -34,7 +34,7 @@ runs:
           python3 ./clickfile.py infra deploy --current_branch ${{ github.ref_name}} --head_branch ${{ github.head_ref }} --base_branch ${{ github.base_ref }}
       - name: Deploy stand with terraform with real price
         id: deploy-prices
-        if: ${{ inputs.use_real_price }} == '1'
+        if: inputs.use_real_price == '1'
         shell: bash
         run: |
           ssh_key='/tmp/ci-stands'
