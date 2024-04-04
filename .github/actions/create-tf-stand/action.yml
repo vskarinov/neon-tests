@@ -11,6 +11,10 @@ inputs:
   ci_stands_key_hcloud:
     description: 'Private key for hcloud'
     required: false
+  use_real_price:
+    description: 'Remove CONST_GAS_PRICE option from proxy'
+    default: '0'
+    required: false
 
 runs:
   using: composite
@@ -21,11 +25,20 @@ runs:
         uses: ./.github/actions/python-requirements
       - name: Deploy stand with terraform
         id: deploy
+        if: ${{ inputs.use_real_price }} == '0'
         shell: bash
         run: |
           ssh_key='/tmp/ci-stands'
           echo "${{ inputs.ci_stands_key_hcloud  }}" >> ${ssh_key} && chmod 400 ${ssh_key}
           python3 ./clickfile.py infra deploy --current_branch ${{ github.ref_name}} --head_branch ${{ github.head_ref }} --base_branch ${{ github.base_ref }}
+      - name: Deploy stand with terraform with real price
+        id: deploy
+        if: ${{ inputs.use_real_price }} == '1'
+        shell: bash
+        run: |
+          ssh_key='/tmp/ci-stands'
+          echo "${{ inputs.ci_stands_key_hcloud  }}" >> ${ssh_key} && chmod 400 ${ssh_key}
+          python3 ./clickfile.py infra deploy --current_branch ${{ github.ref_name}} --head_branch ${{ github.head_ref }} --base_branch ${{ github.base_ref }} --use-real-price
       - uses: actions/upload-artifact@v4
         with:
           name: tf-state
