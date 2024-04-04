@@ -217,6 +217,12 @@ def erc20_spl_mintable(web3_client_session: NeonChainWeb3Client, faucet, sol_cli
     yield erc20
 
 
+@pytest.fixture(scope="function")
+def new_account(web3_client_session, faucet, eth_bank_account):
+    account = web3_client_session.create_account_with_balance(faucet, bank_account=eth_bank_account)
+    yield account
+
+
 @pytest.fixture(scope="class")
 def class_account_sol_chain(
     sol_client_session,
