@@ -57,7 +57,7 @@ services:
     environment:
       SOLANA_URL: $SOLANA_URL
       PYTH_MAPPING_ACCOUNT: "BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2"
-      PP_SOLANA_URL: "https://qa-devnet.sol-rpc.neoninfra.xyz:8523/fTpmQaTPb1aQYw882LTqUaIAspBMhOW3HXVqchVi/"
+      PP_SOLANA_URL: $CI_PP_SOLANA_URL
       EXTRA_ARGS: "--num-workers 16"
     ports:
       - "9090:9090"
