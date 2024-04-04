@@ -85,7 +85,8 @@ EOF
 # Get list of services
 SERVICES=$(docker-compose -f docker-compose-ci.yml -f docker-compose-ci.override.yml config --services | grep -vP "solana|gas_tank|neon_test_invoke_program_loader")
 
-if [[ -n $USE_REAL_GAS_PRICE ]] && [[ $USE_REAL_GAS_PRICE -eq 1 ]]; then
+echo "CONST GAS PRICE VARIABLE IS: $USE_REAL_GAS_PRICE"
+if [[ -n $USE_REAL_GAS_PRICE ]] && [[ $USE_REAL_GAS_PRICE -eq "1" ]]; then
   # remove some variables for economy (test)
   sed -i '/CONST_GAS_PRICE/d' docker-compose-ci.yml
 fi
