@@ -18,7 +18,7 @@ env:
   NETWORK: ${{ github.event.inputs.network || 'night-stand' }}
   BUILD_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   IMAGE:  neonlabsorg/neon_tests
-  CONTAINER:  economy-F
+  CONTAINER:  "economy-${{ github.run_id }}"
 jobs:
   dockerize:
     if: ${{ github.ref_name != 'develop'}}
