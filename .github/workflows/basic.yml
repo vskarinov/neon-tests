@@ -5,15 +5,15 @@ concurrency:
   cancel-in-progress: true
 on:
   schedule:
-    - cron: "0 23,2 * * 0,1,2,3,4"
-    - cron: "0 4 * * 0,1,2,3,4"
+    - cron: "0 1 * * 0,1,2,3,4"
+    - cron: "0 2 * * 0,1,2,3,4"
   pull_request:
     types: [ opened, reopened, synchronize ]
   workflow_dispatch:
     inputs:
       network:
         type: choice
-        default: night-stand
+        default: terraform
         required: true
         description: "Stand name"
         options:
@@ -56,11 +56,11 @@ jobs:
     runs-on: ubuntu-20.04
     if: always()
     steps:
-      - name: Setup `night-stand` by cron schedule
-        id: setup_night_stand
-        if: github.event.schedule=='0 23,2 * * 0,1,2,3,4'
+      - name: Setup `terraform` by cron schedule
+        id: setup_terraform_stand
+        if: github.event.schedule=='0 1 * * 0,1,2,3,4'
         run: |
-          echo "NETWORK=night-stand" >> $GITHUB_ENV
+          echo "NETWORK=terraform" >> $GITHUB_ENV
       - name: Setup `devnet` by cron schedule
         id: setup_devnet
         if: github.event.schedule=='0 4 * * 0,1,2,3,4'
