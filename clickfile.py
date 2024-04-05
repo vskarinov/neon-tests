@@ -884,7 +884,7 @@ def infra():
 @click.option("--current_branch", help="Branch of neon-tests repository")
 @click.option("--head_branch", default="", help="Feature branch name")
 @click.option("--base_branch", default="", help="Target branch of the pull request")
-@click.option("--use-real-price", required=False, is_flag=True, default=False, help="Remove CONST_GAS_PRICE from proxy")
+@click.option("--use-real-price", required=False, default="0", help="Remove CONST_GAS_PRICE from proxy")
 def deploy(current_branch, head_branch, base_branch, use_real_price):
     # use feature branch or version tag as tag for proxy, evm and faucet images or use latest
     proxy_tag, evm_tag, faucet_tag = "", "", ""
@@ -911,6 +911,7 @@ def deploy(current_branch, head_branch, base_branch, use_real_price):
     proxy_tag = "latest" if not proxy_tag else proxy_tag
     evm_tag = "latest" if not evm_tag else evm_tag
     faucet_tag = "latest" if not faucet_tag else faucet_tag
+    use_real_price = True if use_real_price == "1" else False
 
     evm_branch = evm_tag if evm_tag != "latest" else "develop"
     proxy_branch = proxy_tag if proxy_tag != "latest" else "develop"
