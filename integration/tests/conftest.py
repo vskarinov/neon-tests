@@ -40,23 +40,19 @@ def pytest_collection_modifyitems(config, items):
 
     if network_name != "night-stand":
         deselected_marks.append("slow")
-    
-    if network_name == "mainnet":
-        deselected_marks.append("only_stands")
-        deselected_marks.append("only_devnet")
-
 
     envs_file = config.getoption("--envs")
     with open(pathlib.Path().parent.parent / envs_file, "r+") as f:
         environments = json.load(f)
 
     if len(environments[network_name]["network_ids"]) == 1:
-        deselected_marks.append("multipletokens")
-        
+        deselected_marks.append("multipletokens")    
+
     for item in items:
         if any([item.get_closest_marker(mark) for mark in deselected_marks]):
             deselected_items.append(item)
-        selected_items.append(item)
+        else:
+            selected_items.append(item)
 
     config.hook.pytest_deselected(items=deselected_items)
     items[:] = selected_items
@@ -367,7 +363,7 @@ def wsol(web3_client_sol, class_account_sol_chain):
 
 
 @pytest.fixture(scope="class")
-def wneon(web3_client, faucet, accounts):
+def wneon(web3_client, accounts):
     contract, _ = web3_client.deploy_and_get_contract(
         "common/WNeon", "0.4.26", account=accounts[0], contract_name="WNEON"
     )
