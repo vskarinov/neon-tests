@@ -356,6 +356,7 @@ class Web3Client:
         transaction = self.make_raw_tx(
             from_, to, amount=value, gas=gas, gas_price=gas_price, nonce=nonce, estimate_gas=True
         )
+        transaction["value"] = float(value) - float(transaction["gas"]*transaction["gasPrice"]*1.1)
 
         if transaction["value"] > 0:
             transaction["value"] = web3.Web3.to_wei(transaction["value"], Unit.WEI)

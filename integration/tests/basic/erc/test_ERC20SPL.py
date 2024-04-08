@@ -3,6 +3,7 @@ import random
 import allure
 import pytest
 import web3
+from _pytest.config import Config
 from solana.rpc.types import TokenAccountOpts, TxOpts
 from solana.transaction import Transaction
 from spl.token import instructions
@@ -33,7 +34,9 @@ class TestERC20SPL:
     sol_client: SolanaClient
 
     @pytest.fixture(scope="class")
-    def erc20_contract(self, erc20_spl):
+    def erc20_contract(self, erc20_spl, eth_bank_account, config: Config):
+        if config.getoption("--network") == "mainnet":
+            self.web3_client.send_neon(eth_bank_account, erc20_spl.account.address, 10)
         return erc20_spl
 
     @pytest.fixture()
@@ -51,7 +54,7 @@ class TestERC20SPL:
     @pytest.mark.mainnet
     def test_balanceOf(self, erc20_contract):
         recipient_account = self.accounts[1]
-        transfer_amount = 1
+        transfer_amount = random.randint(0, 1000)
         initial_balance = erc20_contract.get_balance(recipient_account)
         erc20_contract.transfer(erc20_contract.account, recipient_account, transfer_amount)
         assert erc20_contract.get_balance(recipient_account) == initial_balance + transfer_amount
@@ -112,10 +115,10 @@ class TestERC20SPL:
 
     @pytest.mark.mainnet
     def test_burnFrom(self, erc20_contract, restore_balance):
-        new_account = self.accounts[0]
+        new_account = self.accounts[1]
         balance_before = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         total_before = erc20_contract.contract.functions.totalSupply().call()
-        amount = 1
+        amount = random.randint(0, 1000)
         erc20_contract.approve(erc20_contract.account, new_account.address, amount)
         erc20_contract.burn_from(signer=new_account, from_address=erc20_contract.account.address, amount=amount)
 
