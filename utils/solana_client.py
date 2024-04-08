@@ -9,7 +9,7 @@ import solana.rpc.api
 import spl.token.client
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
-from solana.rpc.commitment import Commitment, Finalized
+from solana.rpc.commitment import Commitment, Finalized, Confirmed
 from solana.rpc.types import TxOpts
 from solders.rpc.responses import GetTransactionResp
 from solders.signature import Signature
@@ -127,6 +127,12 @@ class SolanaClient(solana.rpc.api.Client):
         sig = self.send_transaction(tx, *signers, opts=opts).value
         sig_status = json.loads((self.confirm_transaction(sig)).to_json())
         assert sig_status["result"]["value"][0]["status"] == {"Ok": None}, f"error:{sig_status}"
+
+    def send_tx(self, trx: Transaction, *signers: Keypair, wait_status=Confirmed):
+        result = self.send_transaction(trx, *signers,
+                                         opts=TxOpts(skip_confirmation=True, preflight_commitment=wait_status))
+        self.confirm_transaction(result.value, commitment=Confirmed)
+        return self.get_transaction(result.value, commitment=Confirmed)
 
     def create_ata(self, solana_account, neon_mint):
         trx = Transaction()

@@ -4,7 +4,7 @@ from solana.transaction import Transaction
 from spl.token.constants import TOKEN_PROGRAM_ID
 from spl.token.instructions import ApproveParams, approve, get_associated_token_address, MintToParams, mint_to
 
-from utils.instructions import Instruction, get_solana_wallet_signer
+from utils.instructions_to_refactor import Instruction, get_solana_wallet_signer
 
 
 def token_from_solana_to_neon_tx(sol_client, solana_account, mint, neon_account, amount, evm_loader_id, chain_id):
@@ -46,15 +46,7 @@ def token_from_solana_to_neon_tx(sol_client, solana_account, mint, neon_account,
 
 
 def wSOL_tx(wSOL_account, spl_token, amount, solana_wallet, ata_address):
-    mint_pubkey = PublicKey(spl_token["address_spl"])
-
     tx = Transaction(fee_payer=solana_wallet)
-    if wSOL_account is None:
-        tx.add(
-            Instruction.associated_token_account(
-                solana_wallet, ata_address, solana_wallet, mint_pubkey, instruction_data=bytes(0)
-            )
-        )
     tx.add(transfer(TransferParams(solana_wallet, ata_address, amount)))
     tx.add(Instruction.sync_native(ata_address))
 

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 
 from solana.publickey import PublicKey
@@ -42,6 +43,12 @@ class InputTestConstants(Enum):
     DEFAULT_TRANSFER_AMOUNT = 0.1
     SAMPLE_AMOUNT = 0.5
     ROUND_DIGITS = 3
+
+@dataclass
+class TreasuryPool:
+    index: int
+    account: PublicKey
+    buffer: bytes
 
 
 wSOL = {

@@ -1,13 +1,18 @@
 import base64
 
 from solana.rpc.commitment import Confirmed
+from solders.rpc.requests import GetTransaction
+from solders.rpc.responses import GetTransactionResp
 
 from ..solana_utils import solana_client
 
 
-def check_transaction_logs_have_text(trx_hash, text):
+def check_transaction_logs_have_text(trx, text):
 
-    receipt = solana_client.get_transaction(trx_hash)
+    if isinstance(trx, GetTransactionResp):
+        receipt = trx
+    else:
+        receipt = solana_client.get_transaction(trx)
     logs = ""
     for log in receipt.value.transaction.meta.log_messages:
         if "Program data:" in log:
