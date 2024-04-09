@@ -34,8 +34,8 @@ class TestERC20SPL:
     sol_client: SolanaClient
 
     @pytest.fixture(scope="class")
-    def erc20_contract(self, erc20_spl, eth_bank_account, config: Config):
-        if config.getoption("--network") == "mainnet":
+    def erc20_contract(self, erc20_spl, eth_bank_account, pytestconfig: Config):
+        if pytestconfig.getoption("--network") == "mainnet":
             self.web3_client.send_neon(eth_bank_account, erc20_spl.account.address, 10)
         return erc20_spl
 

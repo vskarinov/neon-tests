@@ -159,7 +159,7 @@ def solana_account(bank_account, pytestconfig: Config, sol_client_session):
 
 
 @pytest.fixture(scope="class")
-def accounts(request, accounts_session, web3_client_session, pytestconfig: Config):
+def accounts(request, accounts_session, web3_client_session, pytestconfig: Config, eth_bank_account):
     if inspect.isclass(request.cls):
         request.cls.accounts = accounts_session
     yield accounts_session
@@ -167,8 +167,6 @@ def accounts(request, accounts_session, web3_client_session, pytestconfig: Confi
         if len(accounts_session.accounts_collector) > 0:
             for item in accounts_session.accounts_collector:
                 with allure.step(f"Restoring eth account balance from {item.key.hex()} account"):
-                    balance = web3_client_session.get_balance(item.address)
-                    print(f"Restoring eth account balance from {item.key.hex()} account, account balance before: {balance}")
                     web3_client_session.send_all_neons(item, eth_bank_account)
     accounts_session._accounts = []
 
@@ -324,7 +322,7 @@ def neon_mint(pytestconfig: Config):
 
 @pytest.fixture(scope="class")
 def withdraw_contract(web3_client, faucet, accounts):
-    contract, _ = web3_client.deploy_and_get_contract("precompiled/NeonToken", "0.8.10", account=accounts[0])
+    contract, _ = web3_client.deploy_and_get_contract("precompiled/NeonToken", "0.8.10", account=accounts[1])
     return contract
 
 
