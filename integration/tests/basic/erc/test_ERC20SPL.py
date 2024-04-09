@@ -3,6 +3,7 @@ import random
 import allure
 import pytest
 import web3
+from _pytest.config import Config
 from solana.rpc.types import TokenAccountOpts, TxOpts
 from solana.transaction import Transaction
 from spl.token import instructions
@@ -33,13 +34,16 @@ class TestERC20SPL:
     sol_client: SolanaClient
 
     @pytest.fixture(scope="class")
-    def erc20_contract(self, erc20_spl):
+    def erc20_contract(self, erc20_spl, eth_bank_account, pytestconfig: Config):
+        if pytestconfig.getoption("--network") == "mainnet":
+            self.web3_client.send_neon(eth_bank_account, erc20_spl.account.address, 10)
         return erc20_spl
 
     @pytest.fixture()
     def restore_balance(self, erc20_contract):
         pass
 
+    @pytest.mark.mainnet
     def test_metaplex_data(self, erc20_contract):
         metaplex.wait_account_info(self.sol_client, erc20_contract.token_mint.pubkey)
         metadata = metaplex.get_metadata(self.sol_client, erc20_contract.token_mint.pubkey)
@@ -47,9 +51,10 @@ class TestERC20SPL:
         assert metadata["data"]["symbol"] == erc20_contract.symbol
         assert metadata["is_mutable"] is True
 
+    @pytest.mark.mainnet
     def test_balanceOf(self, erc20_contract):
         recipient_account = self.accounts[1]
-        transfer_amount = random.randint(0, 100)
+        transfer_amount = random.randint(0, 1000)
         initial_balance = erc20_contract.get_balance(recipient_account)
         erc20_contract.transfer(erc20_contract.account, recipient_account, transfer_amount)
         assert erc20_contract.get_balance(recipient_account) == initial_balance + transfer_amount
@@ -69,6 +74,7 @@ class TestERC20SPL:
         symbol = erc20_contract.contract.functions.symbol().call()
         assert symbol == erc20_contract.symbol
 
+    @pytest.mark.mainnet
     def test_name(self, erc20_contract):
         name = erc20_contract.contract.functions.name().call()
         assert name == erc20_contract.name
@@ -107,7 +113,9 @@ class TestERC20SPL:
         with pytest.raises(ValueError, match=msg):
             erc20_contract.burn(erc20_contract.account, 1, **param)
 
-    def test_burnFrom(self, erc20_contract, new_account, restore_balance):
+    @pytest.mark.mainnet
+    def test_burnFrom(self, erc20_contract, restore_balance):
+        new_account = self.accounts[1]
         balance_before = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         total_before = erc20_contract.contract.functions.totalSupply().call()
         amount = random.randint(0, 1000)
@@ -119,14 +127,16 @@ class TestERC20SPL:
         assert balance_after == balance_before - amount
         assert total_after == total_before - amount
 
-    def test_burnFrom_without_allowance(self, erc20_contract, new_account):
+    def test_burnFrom_without_allowance(self, erc20_contract):
+        new_account = self.accounts.create_account()
         with pytest.raises(
             web3.exceptions.ContractLogicError,
             match="0x65ba6fc3",  # InvalidAllowance error
         ):
             erc20_contract.burn_from(new_account, erc20_contract.account.address, 10)
 
-    def test_burnFrom_more_than_allowanced(self, erc20_contract, new_account):
+    def test_burnFrom_more_than_allowanced(self, erc20_contract):
+        new_account = self.accounts.create_account()
         amount = 2
         erc20_contract.approve(erc20_contract.account, new_account.address, amount)
         with pytest.raises(
@@ -136,12 +146,14 @@ class TestERC20SPL:
             erc20_contract.burn_from(new_account, erc20_contract.account.address, amount + 1)
 
     @pytest.mark.parametrize("param, msg", NO_ENOUGH_GAS_PARAMS)
-    def test_burnFrom_no_enough_gas(self, erc20_contract, new_account, param, msg):
+    def test_burnFrom_no_enough_gas(self, erc20_contract, param, msg):
+        new_account = self.accounts[0]
         erc20_contract.approve(erc20_contract.account, new_account.address, 1)
         with pytest.raises(ValueError, match=msg):
             erc20_contract.burn_from(new_account, erc20_contract.account.address, 1, **param)
 
-    def test_approve_more_than_total_supply(self, erc20_contract, new_account):
+    def test_approve_more_than_total_supply(self, erc20_contract):
+        new_account = self.accounts[0]
         amount = erc20_contract.contract.functions.totalSupply().call() + 1
         erc20_contract.approve(erc20_contract.account, new_account.address, amount)
         allowance = erc20_contract.contract.functions.allowance(
@@ -173,17 +185,19 @@ class TestERC20SPL:
         with pytest.raises(web3.exceptions.InvalidAddress):
             erc20_contract.contract.functions.allowance(erc20_contract.account.address, create_invalid_address()).call()
 
-    def test_allowance_for_new_account(self, erc20_contract, new_account):
+    def test_allowance_for_new_account(self, erc20_contract):
+        new_account = self.accounts.create_account()
         allowance = erc20_contract.contract.functions.allowance(
             new_account.address, erc20_contract.account.address
         ).call()
         assert allowance == 0
 
-    def test_transfer(self, erc20_contract, new_account, restore_balance):
+    def test_transfer(self, erc20_contract, restore_balance):
+        new_account = self.accounts.create_account()
         balance_acc1_before = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         balance_acc2_before = erc20_contract.contract.functions.balanceOf(new_account.address).call()
         total_before = erc20_contract.contract.functions.totalSupply().call()
-        amount = random.randint(1, 1000)
+        amount = random.randint(1, 10)
         erc20_contract.transfer(erc20_contract.account, new_account.address, amount)
         balance_acc1_after = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         balance_acc2_after = erc20_contract.contract.functions.balanceOf(new_account.address).call()
@@ -220,11 +234,12 @@ class TestERC20SPL:
         with pytest.raises(ValueError, match=msg):
             erc20_contract.transfer(erc20_contract.account, erc20_contract.account.address, 1, **param)
 
-    def test_transferFrom(self, erc20_contract, new_account, restore_balance):
+    def test_transferFrom(self, erc20_contract, restore_balance):
+        new_account = self.accounts.create_account()
         balance_acc1_before = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         balance_acc2_before = erc20_contract.contract.functions.balanceOf(new_account.address).call()
         total_before = erc20_contract.contract.functions.totalSupply().call()
-        amount = random.randint(1, 10000)
+        amount = random.randint(1, 10)
         erc20_contract.approve(erc20_contract.account, new_account.address, amount)
         erc20_contract.transfer_from(new_account, erc20_contract.account.address, new_account.address, amount)
         balance_acc1_after = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
@@ -234,7 +249,8 @@ class TestERC20SPL:
         assert balance_acc2_after == balance_acc2_before + amount
         assert total_before == total_after
 
-    def test_transferFrom_without_allowance(self, erc20_contract, new_account):
+    def test_transferFrom_without_allowance(self, erc20_contract):
+        new_account = self.accounts.create_account()
         with pytest.raises(
             web3.exceptions.ContractLogicError,
             match="0x65ba6fc3",  # InvalidAllowance error
@@ -246,7 +262,8 @@ class TestERC20SPL:
                 amount=10,
             )
 
-    def test_transferFrom_more_than_allowanced(self, erc20_contract, new_account):
+    def test_transferFrom_more_than_allowanced(self, erc20_contract):
+        new_account = self.accounts.create_account()
         amount = 2
         erc20_contract.approve(erc20_contract.account, new_account.address, amount)
         with pytest.raises(
@@ -269,7 +286,8 @@ class TestERC20SPL:
                 amount=1,
             )
 
-    def test_transferFrom_more_than_balance(self, erc20_contract, new_account):
+    def test_transferFrom_more_than_balance(self, erc20_contract):
+        new_account = self.accounts.create_account()
         amount = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call() + 1
         erc20_contract.approve(erc20_contract.account, new_account.address, amount)
         with pytest.raises(
@@ -284,7 +302,8 @@ class TestERC20SPL:
             )
 
     @pytest.mark.parametrize("param, msg", NO_ENOUGH_GAS_PARAMS)
-    def test_transferFrom_no_enough_gas(self, erc20_contract, new_account, param, msg):
+    def test_transferFrom_no_enough_gas(self, erc20_contract, param, msg):
+        new_account = self.accounts.create_account()
         erc20_contract.approve(erc20_contract.account, new_account.address, 1)
         with pytest.raises(ValueError, match=msg):
             erc20_contract.transfer_from(new_account, erc20_contract.account.address, new_account.address, 1, **param)
@@ -379,7 +398,8 @@ class TestERC20SPL:
 
         assert balance_after == balance_before - sent_amount + claim_amount, "Balance is not correct"
 
-    def test_claimTo(self, erc20_contract, sol_client, solana_associated_token_erc20, pytestconfig, new_account):
+    def test_claimTo(self, erc20_contract, sol_client, solana_associated_token_erc20, pytestconfig):
+        new_account = self.accounts.create_account()
         acc, token_mint, solana_address = solana_associated_token_erc20
         user1_balance_before = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         user2_balance_before = erc20_contract.contract.functions.balanceOf(new_account.address).call()
@@ -472,7 +492,8 @@ class TestERC20SPLMintable(TestERC20SPL):
         balance_after = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         assert balance_after == balance_before + amount
 
-    def test_mint_to_another_account(self, erc20_contract, new_account):
+    def test_mint_to_another_account(self, erc20_contract):
+        new_account = self.accounts.create_account(0)
         amount = random.randint(1, MAX_TOKENS_AMOUNT)
         erc20_contract.mint_tokens(erc20_contract.account, new_account.address, amount)
         balance_after = erc20_contract.contract.functions.balanceOf(new_account.address).call()
@@ -620,9 +641,9 @@ class TestERC20SPLMintable(TestERC20SPL):
         sol_client,
         solana_associated_token_mintable_erc20,
         pytestconfig,
-        new_account,
     ):
         acc, token_mint, solana_address = solana_associated_token_mintable_erc20
+        new_account = self.accounts.create_account()
         user1_balance_before = erc20_contract.contract.functions.balanceOf(erc20_contract.account.address).call()
         user2_balance_before = erc20_contract.contract.functions.balanceOf(new_account.address).call()
         sent_amount = random.randint(10, 1000)
@@ -711,7 +732,8 @@ class TestMultipleActionsForERC20:
             contract_balance == mint_amount - transfer_amount_1 - transfer_amount_2 + contract_balance_before
         ), "Contract balance is not correct"
 
-    def test_mint_transfer_transfer_different_recipients(self, multiple_actions_erc20, new_account):
+    def test_mint_transfer_transfer_different_recipients(self, multiple_actions_erc20):
+        new_account = self.accounts.create_account()
         sender_account = self.accounts[0]
         acc_1, contract = multiple_actions_erc20
         acc_2 = new_account
@@ -942,3 +964,127 @@ class TestMultipleActionsForERC20:
             contract_balance == mint_amount_1 + mint_amount_2 - transfer_amount - burn_amount + contract_balance_before
         ), "Contract balance is not correct"
         assert user_balance == transfer_amount + user_balance_before, "User balance is not correct"
+
+
+@pytest.fixture(scope="class")
+def new_factory_contract(web3_client, erc20_spl_mintable):
+    contract, tx = web3_client.deploy_and_get_contract(
+        "external/neon-contracts/ERC20ForSPL/contracts/test/ERC20ForSPLMintableFactoryV2",
+        "0.8.24",
+        erc20_spl_mintable.account,
+        contract_name="ERC20ForSPLMintableFactoryV2",
+    )
+    return contract
+
+
+@pytest.fixture(scope="class")
+def new_token_contract(web3_client, erc20_spl_mintable):
+    contract, tx = web3_client.deploy_and_get_contract(
+        "external/neon-contracts/ERC20ForSPL/contracts/test/ERC20ForSPLMintableV2",
+        "0.8.24",
+        erc20_spl_mintable.account,
+        contract_name="ERC20ForSPLMintableV2",
+    )
+    return contract
+
+
+@allure.feature("ERC Verifications")
+@allure.story("ERC20SPL: Tests for factory update")
+@pytest.mark.usefixtures("accounts", "web3_client", "sol_client")
+class TestERC20FactoryUpdate:
+    web3_client: NeonChainWeb3Client
+    accounts: EthAccounts
+    sol_client: SolanaClient
+
+    def get_factory_contract(self, token_contract):
+        factory_address = token_contract.functions.beacon().call()
+        factory_contract = self.web3_client.get_deployed_contract(
+            factory_address,
+            "external/neon-contracts/ERC20ForSPL/contracts/ERC20ForSPLMintableFactory",
+            contract_name="ERC20ForSPLMintableFactory",
+            solc_version="0.8.24",
+        )
+        return factory_contract
+
+    def test_update_factory(self, erc20_spl_mintable, new_factory_contract):
+        # get contract factory object, get address from erc20 token contract
+        factory_contract = self.get_factory_contract(erc20_spl_mintable.contract)
+        # update factory implementation
+        impl_address_before_update = self.web3_client.eth.get_storage_at(factory_contract.address, 1).hex()
+        tx_opt = self.web3_client.make_raw_tx(erc20_spl_mintable.account)
+        tx_body = factory_contract.functions.upgradeToAndCall(new_factory_contract.address, "0x").build_transaction(
+            tx_opt
+        )
+        receipt = self.web3_client.send_transaction(erc20_spl_mintable.account, tx_body)
+        assert receipt.status == 1, "Transaction failed"
+
+        # check proxy factory address
+        impl_address_after_update = self.web3_client.eth.get_storage_at(factory_contract.address, 1).hex()
+        assert impl_address_before_update != impl_address_after_update, "Factory wasn't updated"
+
+        # check new factory method
+        new_factory_contract.address = factory_contract.address
+        assert new_factory_contract.functions.getDummyData().call() == 1617181920
+
+        # deploy new token
+        deploy_tx = self.web3_client.make_raw_tx(erc20_spl_mintable.account)
+        deploy_body = factory_contract.functions.deploy("TOKEN2", "ABC", "http://uri2.com", 8).build_transaction(
+            deploy_tx
+        )
+        deploy_receipt = self.web3_client.send_transaction(erc20_spl_mintable.account, deploy_body)
+        logs = factory_contract.events.TokenDeploy().process_receipt(deploy_receipt)
+        new_token_addr = logs[0]["args"]["token"]
+        new_token_contract = self.web3_client.get_deployed_contract(
+            new_token_addr,
+            contract_file="external/neon-contracts/ERC20ForSPL/contracts/ERC20ForSPLMintable",
+            solc_version="0.8.24",
+        )
+        assert new_token_contract.functions.name().call() == "TOKEN2"
+
+    def test_update_factory_with_incorrect_address(self, erc20_spl_mintable):
+        factory_contract = self.get_factory_contract(erc20_spl_mintable.contract)
+        tx_opt = self.web3_client.make_raw_tx(erc20_spl_mintable.account, gas=10000000)
+        tx_body = factory_contract.functions.upgradeToAndCall(
+            "0x3c42de8cf594B3955b596BFC16Deee4dF4BA10B7", "0x"
+        ).build_transaction(tx_opt)
+        receipt = self.web3_client.send_transaction(erc20_spl_mintable.account, tx_body)
+        assert receipt.status == 0, "Transaction should fail"
+
+    def test_update_factory_invalid_owner(self, erc20_spl_mintable, accounts, new_factory_contract):
+        factory_contract = self.get_factory_contract(erc20_spl_mintable.contract)
+        tx_opt = self.web3_client.make_raw_tx(accounts[0], gas=10000000)
+        tx_body = factory_contract.functions.upgradeToAndCall(new_factory_contract.address, "0x").build_transaction(
+            tx_opt
+        )
+        receipt = self.web3_client.send_transaction(accounts[0], tx_body)
+        assert receipt.status == 0, "Transaction should fail"
+
+    def test_update_token_contract(self, erc20_spl_mintable, new_token_contract):
+        # get contract factory object, get address from erc20 token contract
+        factory_contract = self.get_factory_contract(erc20_spl_mintable.contract)
+        # update factory implementation
+        impl_address_before_update = self.web3_client.eth.get_storage_at(factory_contract.address, 0).hex()
+        tx_opt = self.web3_client.make_raw_tx(erc20_spl_mintable.account)
+        tx_body = factory_contract.functions.upgradeTo(new_token_contract.address).build_transaction(tx_opt)
+        receipt = self.web3_client.send_transaction(erc20_spl_mintable.account, tx_body)
+        assert receipt.status == 1, "Transaction failed"
+
+        # check proxy factory address
+        impl_address_after_update = self.web3_client.eth.get_storage_at(factory_contract.address, 0).hex()
+        assert impl_address_before_update != impl_address_after_update, "Token implementation wasn't updated"
+
+        # deploy new token
+        deploy_tx = self.web3_client.make_raw_tx(erc20_spl_mintable.account)
+        deploy_body = factory_contract.functions.deploy("TOKEN3", "ABC", "http://uri2.com", 8).build_transaction(
+            deploy_tx
+        )
+        deploy_receipt = self.web3_client.send_transaction(erc20_spl_mintable.account, deploy_body)
+        logs = factory_contract.events.TokenDeploy().process_receipt(deploy_receipt)
+        new_token_addr = logs[0]["args"]["token"]
+        new_token_contract = self.web3_client.get_deployed_contract(
+            new_token_addr,
+            contract_file="external/neon-contracts/ERC20ForSPL/contracts/test/ERC20ForSPLMintableV2",
+            solc_version="0.8.24",
+        )
+        assert new_token_contract.functions.name().call() == "TOKEN3"
+        assert new_token_contract.functions.getDummyData().call() == 1112131415

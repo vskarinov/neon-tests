@@ -38,7 +38,7 @@ class Unit(Enum):
 
 
 class InputTestConstants(Enum):
-    NEW_USER_REQUEST_AMOUNT = 200
+    NEW_USER_REQUEST_AMOUNT = 20
     DEFAULT_TRANSFER_AMOUNT = 0.1
     SAMPLE_AMOUNT = 0.5
     ROUND_DIGITS = 3
@@ -52,4 +52,9 @@ wSOL = {
     "name": "Wrapped SOL",
     "symbol": "wSOL",
     "logo_uri": "https://raw.githubusercontent.com/neonlabsorg/token-list/master/assets/solana-wsol-logo.svg",
+}
+
+MULTITOKEN_MINTS = {
+    "USDT": "2duuuuhNJHUYqcnZ7LKfeufeeTBgSJdftf2zM3cZV6ym",
+    "ETH": "EwJYd3UAFAgzodVeHprB2gMQ68r4ZEbbvpoVzCZ1dGq5",
 }
