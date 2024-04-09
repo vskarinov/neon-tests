@@ -149,12 +149,10 @@ def make_ExecuteTrxFromAccountDataIterativeOrContinue(
     # 0x35 - TransactionStepFromAccount
     # 0x36 - TransactionStepFromAccountNoChainId
     data = tag.to_bytes(1, "little") + treasury.buffer + step_count.to_bytes(4, "little") + index.to_bytes(4, "little")
-    #operator_ether = eth_keys.PrivateKey(operator.secret_key[:32]).public_key.to_canonical_address()
     print("make_ExecuteTrxFromAccountDataIterativeOrContinue accounts")
     print("Holder: ", holder_address)
     print("Operator: ", operator.public_key)
     print("Treasury: ", treasury.account)
-    #print("Operator ether: ", operator_ether.hex())
     print("Operator eth solana: ", operator_balance)
     accounts = [
         AccountMeta(pubkey=holder_address, is_signer=False, is_writable=True),
@@ -276,3 +274,21 @@ def make_CreateAssociatedTokenIdempotent(payer: PublicKey, owner: PublicKey, min
         program_id=ASSOCIATED_TOKEN_PROGRAM_ID,
     )
 
+def make_CreateBalanceAccount(evm_loader_id: PublicKey,
+                              sender_pubkey: PublicKey,
+                              ether_address: bytes,
+                              account_pubkey:PublicKey,
+                              contract_pubkey:PublicKey,
+                              chain_id) -> TransactionInstruction:
+    print('createBalanceAccount: {}'.format(account_pubkey))
+
+    data = bytes([0x30]) + ether_address + chain_id.to_bytes(8, 'little')
+    return TransactionInstruction(
+        program_id=evm_loader_id,
+        data=data,
+        keys=[
+            AccountMeta(pubkey=sender_pubkey, is_signer=True, is_writable=True),
+            AccountMeta(pubkey=sp.SYS_PROGRAM_ID, is_signer=False, is_writable=False),
+            AccountMeta(pubkey=account_pubkey, is_signer=False, is_writable=True),
+            AccountMeta(pubkey=contract_pubkey, is_signer=False, is_writable=True),
+        ])

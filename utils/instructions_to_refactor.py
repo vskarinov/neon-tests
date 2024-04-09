@@ -15,26 +15,6 @@ DEFAULT_HEAP_FRAME = 256 * 1024
 
 
 class Instruction:
-    @staticmethod
-    def balance_account(solana_wallet, account_pubkey, contract_pubkey,
-                   neon_wallet, evm_loader_id, chain_id) -> TransactionInstruction:
-
-        keys = [
-            AccountMeta(pubkey=solana_wallet,
-                        is_signer=True, is_writable=True),
-            AccountMeta(pubkey=SYS_PROGRAM_ID,
-                        is_signer=False, is_writable=False),
-            AccountMeta(pubkey=account_pubkey,
-                        is_signer=False, is_writable=True),
-            AccountMeta(pubkey=contract_pubkey,
-                        is_signer=False, is_writable=True),
-        ]
-
-        data = bytes.fromhex('30') + bytes.fromhex(str(neon_wallet)[2:])  + chain_id.to_bytes(8, 'little')
-        return TransactionInstruction(
-            program_id=PublicKey(evm_loader_id),
-            keys=keys,
-            data=data)
 
     @staticmethod
     def sync_native(account: PublicKey):

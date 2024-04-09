@@ -4,7 +4,8 @@ from solana.transaction import Transaction
 from spl.token.constants import TOKEN_PROGRAM_ID
 from spl.token.instructions import ApproveParams, approve, get_associated_token_address, MintToParams, mint_to
 
-from utils.instructions_to_refactor import Instruction, get_solana_wallet_signer
+from utils.instructions import make_CreateBalanceAccount
+from utils.instructions_to_refactor import get_solana_wallet_signer, Instruction
 
 
 def token_from_solana_to_neon_tx(sol_client, solana_account, mint, neon_account, amount, evm_loader_id, chain_id):
@@ -100,13 +101,21 @@ def neon_transfer_tx(
         )
     )
 
-    tx.add(
-        Instruction.balance_account(solana_wallet, delegate_pda, contract_pubkey, neon_account.address, evm_loader_id,
-                                    chain_id))
+    tx.add(make_CreateBalanceAccount(evm_loader_id,
+                                     solana_wallet,
+                                     bytes.fromhex(str(neon_account.address)[2:]),
+                                     delegate_pda,
+                                     contract_pubkey,
+                                     chain_id))
+
 
     tx.add(
-        Instruction.balance_account(solana_wallet, emulated_signer_pda, emulated_contract_pubkey,
-                                    emulate_signer.address, evm_loader_id, chain_id)
+        make_CreateBalanceAccount(evm_loader_id,
+                                  solana_wallet,
+                                  bytes.fromhex(str(emulate_signer.address)[2:]),
+                                  emulated_signer_pda,
+                                  emulated_contract_pubkey,
+                                  chain_id)
     )
 
     tx.add(

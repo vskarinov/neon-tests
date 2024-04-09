@@ -17,7 +17,7 @@ from solders.rpc.responses import SendTransactionResp, GetTransactionResp
 from integration.tests.neon_evm.utils.constants import ACCOUNT_SEED_VERSION
 from utils.instructions import TransactionWithComputeBudget, make_ExecuteTrxFromInstruction, make_WriteHolder, \
     make_ExecuteTrxFromAccount, make_PartialCallOrContinueFromRawEthereumTX, \
-    make_ExecuteTrxFromAccountDataIterativeOrContinue
+    make_ExecuteTrxFromAccountDataIterativeOrContinue, make_CreateBalanceAccount
 from utils.layouts import BALANCE_ACCOUNT_LAYOUT, CONTRACT_ACCOUNT_LAYOUT, STORAGE_CELL_LAYOUT
 
 EVM_STEPS = 500
@@ -32,21 +32,8 @@ class EvmLoader:
     def create_balance_account(self, ether: Union[str, bytes], sender, chain_id=CHAIN_ID) -> PublicKey:
         account_pubkey = self.ether2balance(ether, chain_id)
         contract_pubkey = PublicKey(self.ether2program(ether)[0])
-        print('createBalanceAccount: {} => {}'.format(ether, account_pubkey))
-
-        #TODO: move to instructions
-        data = bytes([0x30]) + self.ether2bytes(ether) + chain_id.to_bytes(8, 'little')
         trx = Transaction()
-        trx.add(TransactionInstruction(
-            program_id=self.loader_id,
-            data=data,
-            keys=[
-                AccountMeta(pubkey=sender.public_key, is_signer=True, is_writable=True),
-                AccountMeta(pubkey=sp.SYS_PROGRAM_ID, is_signer=False, is_writable=False),
-                AccountMeta(pubkey=account_pubkey, is_signer=False, is_writable=True),
-                AccountMeta(pubkey=contract_pubkey, is_signer=False, is_writable=True),
-            ]))
-
+        trx.add(make_CreateBalanceAccount(self.loader_id, sender.public_key, self.ether2bytes(ether), account_pubkey, contract_pubkey, chain_id))
         self.sol_client.send_tx(trx, sender)
         return account_pubkey
 
