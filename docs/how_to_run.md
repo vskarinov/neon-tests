@@ -54,13 +54,37 @@ To run neon evm tests:
 ./clickfile.py run evm --numprocesses 6
 ```
 
-## Run tests manual
+## Run tests manually
 
 You can run all tests manually if know which framework it uses. For example, economy tests:
 
 ```bash
 py.test integration/tests/economy/test_economics.py
 ```
+
+## Run tests on mainnet
+
+To run tests with mark "mainnet"
+
+```bash
+./clickfile.py run basic -n mainnet
+```
+
+This command collects 73 items and run it on our mainnet. 
+Bank accounts envs have to be set up:
+
+```
+export BANK_PRIVATE_KEY_MAINNET=
+export ETH_BANK_PRIVATE_KEY_MAINNET=
+```
+
+To run tests in our ci the following secrets should be added to neon-tests repo:
+```
+secrets.ETH_BANK_PRIVATE_KEY_MAINNET
+secrets.BANK_PRIVATE_KEY_MAINNET
+```
+
+Use manual run of Basic tests pipeline with stand option - "mainnet".
 
 ## Useful options
 
