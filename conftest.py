@@ -128,8 +128,8 @@ def evm_loader_keypair():
 @pytest.fixture(scope="session", autouse=True)
 def allure_environment(pytestconfig: Config, web3_client_session: NeonChainWeb3Client):
     opts = {}
-
-    if pytestconfig.getoption("--network") != "geth" and "neon_evm" not in os.getenv("PYTEST_CURRENT_TEST"):
+    network_name = pytestconfig.getoption("--network")
+    if  network_name != "geth" and network_name != "mainnet" and "neon_evm" not in os.getenv("PYTEST_CURRENT_TEST"):
         opts = {
             "Network": pytestconfig.environment.proxy_url,
             "Proxy.Version": web3_client_session.get_proxy_version()["result"],
