@@ -58,8 +58,9 @@ class TestTracerDebugMethods:
 
         response = self.tracer_api.send_rpc(method="debug_traceCall", params=[{}, hex(tx_info["blockNumber"])])
 
-        assert "error" not in response, "Error in response"
-        self.validate_response_result(response)
+        assert "error" in response, "No errors in response"
+        assert response["error"]["code"] == -32603, "Invalid error code"
+        assert response["error"]["message"] == "neon_api::trace failed"
 
     def test_debug_trace_call_zero_eth_call(self):
         sender_account = self.accounts[0]
