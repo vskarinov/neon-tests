@@ -59,6 +59,7 @@ def make_deployment_transaction(
     contract_file_name: tp.Union[pathlib.Path, str],
     contract_name: tp.Optional[str] = None,
     encoded_args=None,
+    value: int = 0,
     gas: int = 999999999,
     chain_id=111,
     access_list=None,
@@ -74,6 +75,8 @@ def make_deployment_transaction(
     if access_list:
         tx["accessList"] = access_list
         tx["type"] = 1
+    if value:
+        tx["value"] = value
 
     return w3.eth.account.sign_transaction(tx, user.solana_account.secret_key[:32])
 
@@ -108,13 +111,15 @@ def deploy_contract(
     contract_file_name: tp.Union[pathlib.Path, str],
     evm_loader: EvmLoader,
     treasury_pool: TreasuryPool,
+    value: int = 0,
     encoded_args=None,
     contract_name: tp.Optional[str] = None,
 ):
     contract: Contract = create_contract_address(user, evm_loader)
     holder_acc = create_holder(operator, evm_loader)
-    signed_tx = make_deployment_transaction(evm_loader, user, contract_file_name, contract_name, encoded_args=encoded_args)
+    signed_tx = make_deployment_transaction(evm_loader, user, contract_file_name, contract_name, encoded_args=encoded_args, value=value)
     evm_loader.write_transaction_to_holder_account(signed_tx, holder_acc, operator)
+
 
     resp = evm_loader.execute_transaction_steps_from_account(
         operator,

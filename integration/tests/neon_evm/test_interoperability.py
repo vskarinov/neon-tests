@@ -1,8 +1,10 @@
 import random
 
+import eth_abi
 import pytest
 
 from eth_utils import abi
+from eth_keys import keys as eth_keys
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
 from solana.rpc.commitment import Confirmed
@@ -11,27 +13,31 @@ from solana.rpc.types import TxOpts
 import spl.token.client
 from solana.system_program import SYS_PROGRAM_ID
 from solana.transaction import TransactionInstruction, AccountMeta
-from spl.token.instructions import create_associated_token_account, TransferParams, transfer
+from spl.token.instructions import (
+    create_associated_token_account,
+    TransferParams,
+    transfer)
 
 from integration.tests.neon_evm.solana_utils import create_account, wait_for_account_to_exists
+
 from integration.tests.neon_evm.types.types import Caller
 from integration.tests.neon_evm.utils.call_solana import SolanaCaller
-from integration.tests.neon_evm.utils.constants import NEON_TOKEN_MINT_ID
 
-from integration.tests.neon_evm.utils.contract import deploy_contract
+
+from integration.tests.neon_evm.utils.constants import (
+    NEON_TOKEN_MINT_ID)
+from integration.tests.neon_evm.utils.contract import deploy_contract, make_contract_call_trx
+
 from integration.tests.neon_evm.utils.ethereum import make_eth_transaction
-from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text
-from utils.consts import (
-    MEMO_PROGRAM_ID,
-    COMPUTE_BUDGET_ID,
-    SOLANA_CALL_PRECOMPILED_ID,
-    COUNTER_ID,
-    TRANSFER_SOL_ID,
-    TRANSFER_TOKENS_ID,
-)
-from utils.evm_loader import EvmLoader
+
+from utils.consts import MEMO_PROGRAM_ID, COMPUTE_BUDGET_ID, SOLANA_CALL_PRECOMPILED_ID, COUNTER_ID, TRANSFER_SOL_ID, \
+    TRANSFER_TOKENS_ID
+
+from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text, decode_logs
+from utils.evm_loader import EvmLoader, CHAIN_ID
 
 from utils.instructions import DEFAULT_UNITS, make_CreateAssociatedTokenIdempotent
+from utils.instructions_to_refactor import serialize_instruction
 from utils.layouts import COUNTER_ACCOUNT_LAYOUT
 from utils.metaplex import ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, TOKEN_PROGRAM_ID
 
@@ -176,7 +182,7 @@ class TestInteroperability:
         for i in range(instruction_count):
             call_params.append((COUNTER_ID, 0, instruction))
 
-        with pytest.raises(RPCException, match="failed: exceeded CUs meter at BPF instruction"):
+        with pytest.raises(RPCException, match=r"failed: exceeded CUs meter at BPF instruction|Computational budget exceeded"):
             solana_caller.batch_execute(call_params, sender_with_tokens)
 
     def test_transfer_sol_with_cpi(self, solana_caller, sender_with_tokens, solana_client):
@@ -184,20 +190,20 @@ class TestInteroperability:
         amount = random.randint(1, 1000000)
         instruction = TransactionInstruction(
             program_id=TRANSFER_SOL_ID,
-            keys=[
-                AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
-                AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
-                AccountMeta(SYS_PROGRAM_ID, is_signer=False, is_writable=False),
-            ],
-            data=bytes([0x0]) + amount.to_bytes(8, "little"),
+            keys=[AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
+                  AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
+                  AccountMeta(SYS_PROGRAM_ID, is_signer=False, is_writable=False),
+                  ],
+            data=bytes([0x0]) + amount.to_bytes(8, "little")
+
         )
         call_params = [(TRANSFER_SOL_ID, 0, instruction)]
-        balance_before = solana_client.get_balance(recipient.public_key, Confirmed).value
+        balance_before = solana_client.get_balance(recipient.public_key).value
         resp = solana_caller.batch_execute(
             call_params, sender_with_tokens, additional_signers=[sender_with_tokens.solana_account]
         )
-        check_transaction_logs_have_text(resp, "exit_status=0x11")
-        balance_after = solana_client.get_balance(recipient.public_key, Confirmed).value
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+        balance_after = solana_client.get_balance(recipient.public_key).value
         assert balance_after == balance_before + amount
 
     def test_transfer_sol_without_cpi(self, solana_caller, sender_with_tokens, solana_client):
@@ -206,6 +212,7 @@ class TestInteroperability:
             solana_client, sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID, lamports=100 * 10**9
         )
         recipient = create_account(solana_client, sender_with_tokens.solana_account, 0, TRANSFER_SOL_ID)
+
 
         instruction = TransactionInstruction(
             program_id=TRANSFER_SOL_ID,
@@ -308,3 +315,103 @@ class TestInteroperability:
         )
         with pytest.raises(RPCException, match="Cross-program invocation with unauthorized signer or writable account"):
             solana_caller.execute(TOKEN_PROGRAM_ID, instruction, sender=from_wallet)
+
+    @pytest.mark.skip(reason="NDEV-2837")
+    def test_staticcall_does_not_support_external_call(
+        self, sender_with_tokens, solana_caller, operator_keypair, evm_loader, treasury_pool
+    ):
+        precompiled_caller = deploy_contract(
+            operator_keypair,
+            sender_with_tokens,
+            "precompiled/CommonCaller",
+            evm_loader,
+            treasury_pool,
+            contract_name="CommonCaller",
+        )
+
+        resource_addr = solana_caller.create_resource(sender_with_tokens, b"123", 8, 1000000000, COUNTER_ID)
+
+        instruction = TransactionInstruction(
+            program_id=COUNTER_ID,
+            keys=[
+                AccountMeta(resource_addr, is_signer=False, is_writable=True),
+            ],
+            data=bytes([0x1]),
+        )
+
+        serialized_instructions = serialize_instruction(COUNTER_ID, instruction)
+        calldata = abi.function_signature_to_4byte_selector("execute(uint64,bytes)") + eth_abi.encode(
+            ["uint64", "bytes"], [1000000000, serialized_instructions]
+        )
+
+        signed_tx = make_contract_call_trx(
+            evm_loader,
+            sender_with_tokens,
+            precompiled_caller,
+            "staticcall_precompiled(address,bytes)",
+            [solana_caller.contract.eth_address, calldata],
+        )
+
+        try:
+            resp = evm_loader.execute_trx_from_instruction_with_solana_call(
+                operator_keypair,
+                treasury_pool.account,
+                treasury_pool.buffer,
+                signed_tx,
+                [
+                    sender_with_tokens.balance_account_address,
+                    sender_with_tokens.solana_account_address,
+                    SOLANA_CALL_PRECOMPILED_ID,
+                    solana_caller.contract.balance_account_address,
+                    solana_caller.contract.solana_address,
+                    precompiled_caller.balance_account_address,
+                    precompiled_caller.solana_address,
+                    COUNTER_ID,
+                    resource_addr,
+                ]
+            )
+        except RPCException as err:
+            assert "static mode violation" in decode_logs(err.args[0].data.logs)
+        else:
+            assert False, f"Expected error but got {resp}"
+
+    @pytest.mark.skip(reason="NDEV-2837")
+    def test_call_neon_instruction_by_neon_instruction(
+        self,
+        sender_with_tokens,
+        solana_caller,
+        operator_keypair,
+        evm_loader,
+        treasury_pool,
+        new_holder_acc,
+    ):
+        key = Keypair.generate()
+        caller_ether = eth_keys.PrivateKey(key.secret_key[:32]).public_key.to_canonical_address()
+
+        account_pubkey = evm_loader.ether2balance(caller_ether)
+        contract_pubkey = PublicKey(evm_loader.ether2program(caller_ether)[0])
+
+        data = bytes([0x30]) + evm_loader.ether2bytes(caller_ether) + CHAIN_ID.to_bytes(8, "little")
+        neon_instruction = TransactionInstruction(
+            program_id=evm_loader.loader_id,
+            data=data,
+            keys=[
+                AccountMeta(pubkey=sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
+                AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
+                AccountMeta(pubkey=account_pubkey, is_signer=False, is_writable=True),
+                AccountMeta(pubkey=contract_pubkey, is_signer=False, is_writable=True),
+            ],
+        )
+
+        try:
+            resp = solana_caller.batch_execute(
+                [
+                    (evm_loader.loader_id, 0, neon_instruction),
+                ],
+                sender_with_tokens,
+                additional_signers=[sender_with_tokens.solana_account],
+            )
+        except RPCException as err:
+            assert "Program not allowed to call itself" in decode_logs(err.args[0].data.logs)
+        else:
+            assert False, f"Expected error but got {resp}"

@@ -3,6 +3,7 @@ import pathlib
 import random
 import string
 import time
+import typing
 import typing as tp
 
 
@@ -141,6 +142,26 @@ def create_invalid_address(length=20) -> str:
         address = gen_hash_of_block(length)
     return address
 
+
+
+def cryptohex(text: str):
+    return "0x" + keccak(text=text).hex()
+
+
+def int_to_hex(number: int):
+    return int(number).to_bytes(32, "big").hex()
+
+
+def hasattr_recursive(obj: typing.Any, attribute: str) -> bool:
+    attr = attribute.split(".")
+    temp_obj = obj
+    for a in attr:
+        if hasattr(temp_obj, a):
+            temp_obj = getattr(temp_obj, a)
+            continue
+        return False
+
+    return True
 
 def bytes32_to_solana_pubkey(bytes32_data):
     byte_data = bytes.fromhex(bytes32_data)
