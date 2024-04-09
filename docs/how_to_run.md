@@ -86,6 +86,8 @@ secrets.BANK_PRIVATE_KEY_MAINNET
 
 Use manual run of Basic tests pipeline with stand option - "mainnet".
 
+An approximate cost of one run is ~200 NEONs and ~0.125 SOL.
+
 ## Useful options
 
 - --network - which network uses for run tests (from file envs.json)
