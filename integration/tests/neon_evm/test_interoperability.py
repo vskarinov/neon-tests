@@ -198,12 +198,12 @@ class TestInteroperability:
 
         )
         call_params = [(TRANSFER_SOL_ID, 0, instruction)]
-        balance_before = solana_client.get_balance(recipient.public_key).value
+        balance_before = solana_client.get_balance(recipient.public_key, commitment=Confirmed).value
         resp = solana_caller.batch_execute(
             call_params, sender_with_tokens, additional_signers=[sender_with_tokens.solana_account]
         )
-        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
-        balance_after = solana_client.get_balance(recipient.public_key).value
+        check_transaction_logs_have_text(resp, "exit_status=0x11")
+        balance_after = solana_client.get_balance(recipient.public_key, commitment=Confirmed).value
         assert balance_after == balance_before + amount
 
     def test_transfer_sol_without_cpi(self, solana_caller, sender_with_tokens, solana_client):
