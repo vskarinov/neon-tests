@@ -232,7 +232,13 @@ class TestTracerDebugMethods:
         receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
         assert receipt["status"] == 1
 
-        response = self.tracer_api.send_rpc(method="debug_traceBlockByNumber", params=["0x7d0"])
+        wait_condition(
+            lambda: self.web3_client.get_block_number() is not None,
+            timeout_sec=10,
+        )
+        block = self.web3_client.get_block_number() - 100
+
+        response = self.tracer_api.send_rpc(method="debug_traceBlockByNumber", params=[hex(block)])
         assert "error" not in response, "Error in response"
         assert "result" in response and response["result"] == [], "Result is not empty"
 
