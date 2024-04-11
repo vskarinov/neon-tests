@@ -82,7 +82,7 @@ class TestTracerDebugMethods:
                 "gas": hex(tx_info["gas"]),
                 "gasPrice": hex(tx_info["gasPrice"]),
                 "value": hex(tx_info["value"]),
-                "data": tx_info["input"],
+                "data": tx_info["input"].hex(),
             },
             hex(tx_info["blockNumber"]),
         ]
@@ -116,7 +116,7 @@ class TestTracerDebugMethods:
                 "gas": hex(tx_info["gas"]),
                 "gasPrice": hex(tx_info["gasPrice"]),
                 "value": hex(tx_info["value"]),
-                "data": tx_info["input"],
+                "data": tx_info["input"].hex(),
             },
             hex(tx_info["blockNumber"]),
         ]
