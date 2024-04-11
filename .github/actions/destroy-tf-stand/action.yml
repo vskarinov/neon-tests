@@ -13,7 +13,7 @@ runs:
       - name: Install python requirements
         if: always()
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
       - name: Prepare server for destroy terraform stand
         if: always()
         shell: bash

@@ -18,7 +18,7 @@ runs:
   steps:
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
       - name: Deploy stand with terraform
         id: deploy
         shell: bash

@@ -1,5 +1,5 @@
 name: dApps testing
-run-name: dApps testing (${{ github.event.inputs.dapps || 'all dapps'}}, ${{ github.event.inputs.network || 'terraform' }})
+run-name: dApps testing (${{ inputs.dapps || 'all dapps'}}, ${{ inputs.network || 'terraform' }})
 
 on:
   schedule:
@@ -49,31 +49,42 @@ on:
           description: "Stand name"
         dapps:
           type: string
-          required: false
+          required: true
           description: "List of dapps separated by commas (if empty, all will be run)"
         proxy_url:
           type: string
-          required: false
+          required: true
           description: "proxy_url (fill only for custom stand)"
         solana_url:
           type: string
-          required: false
+          required: true
           description: "solana_url (fill only for custom stand)"
         faucet_url:
           type: string
-          required: false
+          required: true
           description: "faucet_url (fill only for custom stand)"
         network_id:
           type: string
-          required: false
+          required: true
           description: "network_id (fill only for custom stand)"
         pr_url_for_report:
           type: string
-          required: false
+          required: true
           description: "Url to send the report as comment for PR"
+        proxy_ip:
+          type: string
+          required: true
+        solana_ip:
+          type: string
+          required: true
+        external_call:
+          description: 'To distinguish workflow_call from other events'
+          type: boolean
+          required: false
+          default: true
 
 env:
-  NETWORK: ${{ github.event.inputs.network || 'terraform' }}
+  NETWORK: ${{ inputs.network || 'terraform' }}
   AWS_ACCESS_KEY_ID: ${{ secrets.DAPPS_AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.DAPPS_AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: us-east-2
@@ -87,17 +98,21 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Define dapps to run
         id: dapps
         run: |
-          if [[ "${{ github.event.inputs.dapps }}" != "" ]]; then
-            list=${{ github.event.inputs.dapps }}
+          if [[ "${{ inputs.dapps }}" != "" ]]; then
+            list=${{ inputs.dapps }}
           else
             list=${{env.ALL_DAPPS}}
           fi;
           echo "list=${list}"
           echo "list=${list}" >> $GITHUB_OUTPUT
-
       - name: "Prepare terraform stand"
         if: ${{ env.NETWORK == 'terraform' }}
         id: prepare_terraform
@@ -111,21 +126,21 @@ jobs:
           TFSTATE_KEY: ${{vars.TFSTATE_KEY_PREFIX}}-${{ github.run_number }}
           TFSTATE_REGION: ${{vars.TFSTATE_REGION}}
           TF_VAR_ci_pp_solana_url: ${{ secrets.SOLANA_URL }}
-        uses: neonlabsorg/neon-tests/.github/actions/create-tf-stand@NDEV-2772
+        uses: ./.github/actions/create-tf-stand
         with:
           ci_stands_key_hcloud: ${{ secrets.CI_STANDS_KEY_HCLOUD }}
       - name: "Define outputs"
         id: vars
-        uses: neonlabsorg/neon-tests/.github/actions/define-stand-env@NDEV-2772
+        uses: ./.github/actions/define-stand-env
         with:
           network: ${{ env.NETWORK }}
           devnet_solana_url: ${{ secrets.SOLANA_URL }}
-          proxy_ip: ${{ steps.prepare_terraform.outputs.proxy_ip }}
-          solana_ip: ${{ steps.prepare_terraform.outputs.solana_ip }}
-          proxy_url: ${{ github.event.inputs.proxy_url }}
-          solana_url: ${{ github.event.inputs.solana_url }}
-          faucet_url: ${{ github.event.inputs.faucet_url }}
-          network_id: ${{ github.event.inputs.network_id }}
+          proxy_ip: ${{ steps.prepare_terraform.outputs.proxy_ip || inputs.proxy_ip }}
+          solana_ip: ${{ steps.prepare_terraform.outputs.solana_ip || inputs.solana_ip }}
+          proxy_url: ${{ inputs.proxy_url }}
+          solana_url: ${{ inputs.solana_url }}
+          faucet_url: ${{ inputs.faucet_url }}
+          network_id: ${{ inputs.network_id }}
 
     outputs:
       network: ${{ env.NETWORK }}
@@ -133,8 +148,8 @@ jobs:
       proxy_url: ${{ steps.vars.outputs.proxy_url }}
       faucet_url:  ${{ steps.vars.outputs.faucet_url }}
       network_id: ${{ steps.vars.outputs.network_id }}
-      proxy_ip: ${{ steps.prepare_terraform.outputs.proxy_ip }}
-      solana_ip: ${{ steps.prepare_terraform.outputs.solana_ip }}
+      proxy_ip: ${{ steps.prepare_terraform.outputs.proxy_ip || inputs.proxy_ip }}
+      solana_ip: ${{ steps.prepare_terraform.outputs.solana_ip || inputs.solana_ip }}
       dapps: ${{ steps.dapps.outputs.list }}
 
   uniswap-v2:
@@ -151,9 +166,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -199,9 +219,14 @@ jobs:
       NETWORK_ID: ${{ needs.prepare.outputs.network_id }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -246,9 +271,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -294,9 +324,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -335,9 +370,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -381,9 +421,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Run deployment
         timeout-minutes: 10
@@ -410,9 +455,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -456,9 +506,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -500,9 +555,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -548,9 +608,14 @@ jobs:
       NETWORK_ID: ${{ needs.prepare.outputs.network_id }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
 
       - name: Prepare accounts
         id: accounts
@@ -594,9 +659,14 @@ jobs:
       PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
       - uses: actions/download-artifact@v3
         continue-on-error: true
         with:
@@ -650,7 +720,7 @@ jobs:
       - name: "Swap report"
         run: |
           python3 ./clickfile.py dapps report --directory=reports \
-          --pr_url_for_report=${{ github.event.inputs.pr_url_for_report }} \
+          --pr_url_for_report=${{ inputs.pr_url_for_report }} \
           --token=${{secrets.GHTOKEN}}
 
   destroy:
@@ -659,6 +729,11 @@ jobs:
     if: always() && needs.prepare.outputs.network == 'terraform'
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: "Destroy stand"
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
@@ -670,7 +745,7 @@ jobs:
           TFSTATE_REGION: ${{vars.TFSTATE_REGION}}
           PROXY_IP: ${{ needs.prepare.outputs.proxy_ip }}
           SOLANA_IP: ${{ needs.prepare.outputs.solana_ip }}
-        uses: ./.github/actions/destroy-tf-stand
+        uses: ././.github/actions/destroy-tf-stand
         with:
           ci_stands_key_hcloud: ${{ secrets.CI_STANDS_KEY_HCLOUD }}
           devnet_solana_url: ${{ secrets.SOLANA_URL }}
@@ -682,9 +757,14 @@ jobs:
     if: failure() && github.ref_name == 'develop'
     steps:
       - uses: actions/checkout@v4
+      - if: ${{ inputs.external_call }}
+        uses: actions/checkout@v4
+        with:
+          repository: neonlabsorg/neon-tests
+          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
-        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
+        uses: ./.github/actions/python-requirements
       - name: Notify on failure
         id: notification
         run: |
