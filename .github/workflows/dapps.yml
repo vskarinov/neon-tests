@@ -40,6 +40,38 @@ on:
         type: string
         required: false
         description: "Url to send the report as comment for PR"
+  workflow_call:
+    inputs:
+        network:
+          type: string
+          default: terraform
+          required: true
+          description: "Stand name"
+        dapps:
+          type: string
+          required: false
+          description: "List of dapps separated by commas (if empty, all will be run)"
+        proxy_url:
+          type: string
+          required: false
+          description: "proxy_url (fill only for custom stand)"
+        solana_url:
+          type: string
+          required: false
+          description: "solana_url (fill only for custom stand)"
+        faucet_url:
+          type: string
+          required: false
+          description: "faucet_url (fill only for custom stand)"
+        network_id:
+          type: string
+          required: false
+          description: "network_id (fill only for custom stand)"
+        pr_url_for_report:
+          type: string
+          required: false
+          description: "Url to send the report as comment for PR"
+
 env:
   NETWORK: ${{ github.event.inputs.network || 'terraform' }}
   AWS_ACCESS_KEY_ID: ${{ secrets.DAPPS_AWS_ACCESS_KEY_ID }}
