@@ -111,12 +111,12 @@ jobs:
           TFSTATE_KEY: ${{vars.TFSTATE_KEY_PREFIX}}-${{ github.run_number }}
           TFSTATE_REGION: ${{vars.TFSTATE_REGION}}
           TF_VAR_ci_pp_solana_url: ${{ secrets.SOLANA_URL }}
-        uses: ./.github/actions/create-tf-stand
+        uses: neonlabsorg/neon-tests/.github/actions/create-tf-stand@NDEV-2772
         with:
           ci_stands_key_hcloud: ${{ secrets.CI_STANDS_KEY_HCLOUD }}
       - name: "Define outputs"
         id: vars
-        uses: ./.github/actions/define-stand-env
+        uses: neonlabsorg/neon-tests/.github/actions/define-stand-env@NDEV-2772
         with:
           network: ${{ env.NETWORK }}
           devnet_solana_url: ${{ secrets.SOLANA_URL }}
@@ -153,7 +153,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -201,7 +201,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -248,7 +248,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -296,7 +296,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -337,7 +337,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -383,7 +383,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Run deployment
         timeout-minutes: 10
@@ -412,7 +412,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -458,7 +458,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -502,7 +502,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -550,7 +550,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
 
       - name: Prepare accounts
         id: accounts
@@ -596,7 +596,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
       - uses: actions/download-artifact@v3
         continue-on-error: true
         with:
@@ -684,7 +684,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install python requirements
         id: requirements
-        uses: ./.github/actions/python-requirements
+        uses: neonlabsorg/neon-tests/.github/actions/python-requirements@NDEV-2772
       - name: Notify on failure
         id: notification
         run: |
