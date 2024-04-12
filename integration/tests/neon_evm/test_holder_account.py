@@ -7,10 +7,9 @@ from solana.publickey import PublicKey
 from solana.rpc.commitment import Confirmed
 from solana.transaction import Transaction
 
-from utils.instructions import make_WriteHolder
+from utils.evm_loader import EvmLoader
+from utils.instructions import make_WriteHolder, make_CreateAccountWithSeed, make_CreateHolderAccount
 from utils.layouts import HOLDER_ACCOUNT_INFO_LAYOUT
-from . import solana_utils
-from .solana_utils import get_solana_balance
 
 from .utils.assert_messages import InstructionAsserts
 from .utils.contract import make_deployment_transaction, make_contract_call_trx
@@ -18,21 +17,21 @@ from .utils.ethereum import make_eth_transaction
 from .utils.storage import create_holder, delete_holder
 
 
-def transaction_from_holder(solana_client, key: PublicKey):
-    data = solana_client.get_account_info(key, commitment=Confirmed).value.data
+def transaction_from_holder(evm_loader:EvmLoader, key: PublicKey):
+    data = evm_loader.get_account_info(key, commitment=Confirmed).value.data
     header = HOLDER_ACCOUNT_INFO_LAYOUT.parse(data)
 
     return data[HOLDER_ACCOUNT_INFO_LAYOUT.sizeof() :][: header.len]
 
 
-def test_create_holder_account(operator_keypair, evm_loader, solana_client):
+def test_create_holder_account(operator_keypair, evm_loader):
     holder_acc = create_holder(operator_keypair, evm_loader)
-    info = solana_client.get_account_info(holder_acc, commitment=Confirmed)
+    info = evm_loader.get_account_info(holder_acc, commitment=Confirmed)
     assert info.value is not None, "Holder account is not created"
     assert info.value.lamports == 1000000000, "Account balance is not correct"
 
 
-def test_create_the_same_holder_account_by_another_user(operator_keypair, session_user, solana_client, evm_loader):
+def test_create_the_same_holder_account_by_another_user(operator_keypair, session_user, evm_loader):
     seed = str(randrange(1000000))
     storage = PublicKey(
         sha256(bytes(operator_keypair.public_key) + bytes(seed, "utf8") + bytes(evm_loader.loader_id)).digest()
@@ -41,32 +40,34 @@ def test_create_the_same_holder_account_by_another_user(operator_keypair, sessio
 
     trx = Transaction()
     trx.add(
-        solana_utils.create_account_with_seed(
-            session_user.solana_account.public_key, session_user.solana_account.public_key, seed, 10**9, 128 * 1024
+        make_CreateAccountWithSeed(
+            session_user.solana_account.public_key,
+            session_user.solana_account.public_key,
+            seed, 10**9, 128 * 1024, evm_loader.loader_id
         ),
-        solana_utils.create_holder_account(storage, session_user.solana_account.public_key, bytes(seed, "utf8")),
+        make_CreateHolderAccount(storage, session_user.solana_account.public_key, bytes(seed, "utf8"), evm_loader.loader_id)
     )
 
     error = str.format(InstructionAsserts.INVALID_ACCOUNT, storage)
     with pytest.raises(solana.rpc.core.RPCException, match=error):
-        solana_client.send_tx(trx, session_user.solana_account)
+        evm_loader.send_tx(trx, session_user.solana_account)
 
 
-def test_write_tx_to_holder(operator_keypair, session_user, second_session_user, evm_loader, solana_client):
+def test_write_tx_to_holder(operator_keypair, session_user, second_session_user, evm_loader):
     holder_acc = create_holder(operator_keypair, evm_loader)
     signed_tx = make_eth_transaction(evm_loader, second_session_user.eth_address, None, session_user, 10)
     evm_loader.write_transaction_to_holder_account(signed_tx, holder_acc, operator_keypair)
-    assert signed_tx.rawTransaction == transaction_from_holder(solana_client, holder_acc), "Account data is not correct"
+    assert signed_tx.rawTransaction == transaction_from_holder(evm_loader, holder_acc), "Account data is not correct"
 
 
-def test_write_tx_to_holder_in_parts(operator_keypair, session_user, evm_loader, solana_client):
+def test_write_tx_to_holder_in_parts(operator_keypair, session_user, evm_loader):
     holder_acc = create_holder(operator_keypair, evm_loader)
 
     signed_tx = make_deployment_transaction(
         evm_loader, session_user, "external/neon-evm/erc20_for_spl_factory", "ERC20ForSplFactory"
     )
     evm_loader.write_transaction_to_holder_account(signed_tx, holder_acc, operator_keypair)
-    assert signed_tx.rawTransaction == transaction_from_holder(solana_client, holder_acc), "Account data is not correct"
+    assert signed_tx.rawTransaction == transaction_from_holder(evm_loader, holder_acc), "Account data is not correct"
 
 
 def test_write_tx_to_holder_by_no_owner(operator_keypair, session_user, second_session_user, evm_loader):
@@ -77,22 +78,22 @@ def test_write_tx_to_holder_by_no_owner(operator_keypair, session_user, second_s
         evm_loader.write_transaction_to_holder_account(signed_tx, holder_acc, session_user.solana_account)
 
 
-def test_delete_holder(operator_keypair, solana_client, evm_loader):
+def test_delete_holder(operator_keypair, evm_loader):
     holder_acc = create_holder(operator_keypair, evm_loader)
     delete_holder(holder_acc, operator_keypair, operator_keypair, evm_loader)
-    info = solana_client.get_account_info(holder_acc, commitment=Confirmed)
+    info = evm_loader.get_account_info(holder_acc, commitment=Confirmed)
     assert info.value is None, "Holder account isn't deleted"
 
 
 def test_success_refund_after_holder_deleting(operator_keypair, evm_loader):
     holder_acc = create_holder(operator_keypair, evm_loader)
 
-    pre_storage = get_solana_balance(holder_acc)
-    pre_acc = get_solana_balance(operator_keypair.public_key)
+    pre_storage = evm_loader.get_solana_balance(holder_acc)
+    pre_acc = evm_loader.get_solana_balance(operator_keypair.public_key)
 
     delete_holder(holder_acc, operator_keypair, operator_keypair, evm_loader)
 
-    post_acc = get_solana_balance(operator_keypair.public_key)
+    post_acc = evm_loader.get_solana_balance(operator_keypair.public_key)
 
     assert pre_storage + pre_acc, post_acc + 5000
 
@@ -130,7 +131,7 @@ def test_write_to_not_finalized_holder(
 
 
 def test_write_to_finalized_holder(
-    rw_lock_contract, session_user, evm_loader, operator_keypair, treasury_pool, new_holder_acc, solana_client
+    rw_lock_contract, session_user, evm_loader, operator_keypair, treasury_pool, new_holder_acc
 ):
     signed_tx = make_contract_call_trx(
         evm_loader, session_user, rw_lock_contract, "unchange_storage(uint8,uint8)", [1, 1]
@@ -149,11 +150,11 @@ def test_write_to_finalized_holder(
 
     evm_loader.write_transaction_to_holder_account(signed_tx2, new_holder_acc, operator_keypair)
     assert signed_tx2.rawTransaction == transaction_from_holder(
-        solana_client, new_holder_acc
+        evm_loader, new_holder_acc
     ), "Account data is not correct"
 
 
-def test_holder_write_integer_overflow(operator_keypair, holder_acc, solana_client, evm_loader):
+def test_holder_write_integer_overflow(operator_keypair, holder_acc, evm_loader):
     overflow_offset = int(0xFFFFFFFFFFFFFFFF)
 
     trx = Transaction()
@@ -163,10 +164,10 @@ def test_holder_write_integer_overflow(operator_keypair, holder_acc, solana_clie
         )
     )
     with pytest.raises(solana.rpc.core.RPCException, match=InstructionAsserts.HOLDER_OVERFLOW):
-        solana_client.send_tx(trx, operator_keypair)
+        evm_loader.send_tx(trx, operator_keypair)
 
 
-def test_holder_write_account_size_overflow(operator_keypair, holder_acc, solana_client, evm_loader):
+def test_holder_write_account_size_overflow(operator_keypair, holder_acc, evm_loader):
     overflow_offset = int(0xFFFFFFFF)
 
     trx = Transaction()
@@ -176,4 +177,4 @@ def test_holder_write_account_size_overflow(operator_keypair, holder_acc, solana
         )
     )
     with pytest.raises(solana.rpc.core.RPCException, match=InstructionAsserts.HOLDER_INSUFFICIENT_SIZE):
-        solana_client.send_tx(trx, operator_keypair)
+        evm_loader.send_tx(trx, operator_keypair)

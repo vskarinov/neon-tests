@@ -2,11 +2,7 @@ import pytest
 import solana
 from solana.publickey import PublicKey
 
-from integration.tests.neon_evm.solana_utils import (
-    EVM_STEPS,
-    make_new_user,
-    deposit_neon,
-)
+from utils.evm_loader import EVM_STEPS
 from utils.layouts import FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT
 
 from .utils.constants import TAG_FINALIZED_STATE
@@ -131,8 +127,8 @@ class TestAccountRevision:
         send_transaction_steps(holder2, acc_from_emulation2)
         resp1 = send_transaction_steps(holder1, acc_from_emulation1)
         resp2 = send_transaction_steps(holder2, acc_from_emulation2)
-        check_transaction_logs_have_text(resp1.value.transaction.transaction.signatures[0], "exit_status=0x11")
-        check_transaction_logs_have_text(resp2.value.transaction.transaction.signatures[0], "exit_status=0x11")
+        check_transaction_logs_have_text(resp1, "exit_status=0x11")
+        check_transaction_logs_have_text(resp2, "exit_status=0x11")
 
         check_holder_account_tag(holder1, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
         check_holder_account_tag(holder2, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
@@ -200,7 +196,7 @@ class TestAccountRevision:
         resp1 = send_transaction_steps(holder1, acc_from_emulation1)
         send_transaction_steps(holder2, acc_from_emulation2)
 
-        check_transaction_logs_have_text(resp1.value.transaction.transaction.signatures[0], "exit_status=0x11")
+        check_transaction_logs_have_text(resp1, "exit_status=0x11")
 
         if expected_count_data_acc > 0:
             additional_accounts = [
@@ -214,7 +210,7 @@ class TestAccountRevision:
 
         # repeat steps for second user because revision for data accounts is changed
         resp2 = send_transaction_steps(holder2, acc_from_emulation2)
-        check_transaction_logs_have_text(resp2.value.transaction.transaction.signatures[0], "exit_status=0x11")
+        check_transaction_logs_have_text(resp2, "exit_status=0x11")
 
         if expected_count_data_acc > 0:
             data_acc_revision_after_user2_finished = evm_loader.get_data_account_revision(data_account)
@@ -236,12 +232,12 @@ class TestAccountRevision:
         holder1 = holder_acc
         holder2 = new_holder_acc
         amount = 1000000
-        deposit_neon(evm_loader, operator_keypair, sender1.eth_address, 3 * amount)
-        deposit_neon(evm_loader, operator_keypair, sender2.eth_address, 3 * amount)
+        evm_loader.deposit_neon(operator_keypair, sender1.eth_address, 3 * amount)
+        evm_loader.deposit_neon(operator_keypair, sender2.eth_address, 3 * amount)
         recipients = [
-            make_new_user(evm_loader, operator_keypair),
-            make_new_user(evm_loader, operator_keypair),
-            make_new_user(evm_loader, operator_keypair),
+            evm_loader.make_new_user(operator_keypair),
+            evm_loader.make_new_user(operator_keypair),
+            evm_loader.make_new_user(operator_keypair),
         ]
         contract = deploy_contract(operator_keypair, session_user, "transfers", evm_loader, treasury_pool)
 
@@ -292,9 +288,9 @@ class TestAccountRevision:
         send_transaction_steps(holder2, sender2)
         resp1 = send_transaction_steps(holder1, sender1)
         resp2 = send_transaction_steps(holder2, sender2)
-        check_transaction_logs_have_text(resp1.value.transaction.transaction.signatures[0], "exit_status=0x11")
+        check_transaction_logs_have_text(resp1, "exit_status=0x11")
         check_holder_account_tag(holder1, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
-        check_transaction_logs_have_text(resp2.value.transaction.transaction.signatures[0], "exit_status=0x11")
+        check_transaction_logs_have_text(resp2, "exit_status=0x11")
         check_holder_account_tag(holder2, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
         for acc in recipients:
             assert evm_loader.get_neon_balance(acc.eth_address) == amount * 2
@@ -379,9 +375,9 @@ class TestAccountRevision:
         self, operator_keypair, treasury_pool, neon_api_client, session_user, evm_loader, holder_acc
     ):
         amount = 1000000
-        deposit_neon(evm_loader, operator_keypair, session_user.eth_address, 4 * amount)
+        evm_loader.deposit_neon(operator_keypair, session_user.eth_address, 4 * amount)
         sender_balance_before = evm_loader.get_neon_balance(session_user.eth_address)
-        recipients = [make_new_user(evm_loader, operator_keypair), make_new_user(evm_loader, operator_keypair)]
+        recipients = [evm_loader.make_new_user(operator_keypair), evm_loader.make_new_user(operator_keypair)]
         contract = deploy_contract(operator_keypair, session_user, "transfers", evm_loader, treasury_pool)
         operator_balance_pubkey = evm_loader.get_operator_balance_pubkey(operator_keypair)
         recipients_eth_addresses = [rec.eth_address for rec in recipients]
@@ -443,12 +439,12 @@ class TestAccountRevision:
         evm_loader,
         new_holder_acc,
     ):
-        sender = make_new_user(evm_loader, operator_keypair)
+        sender = evm_loader.make_new_user(operator_keypair)
         operator_balance_pubkey = evm_loader.get_operator_balance_pubkey(operator_keypair)
 
         recipient = session_user
 
-        deposit_neon(evm_loader, operator_keypair, sender.eth_address, 1000000)
+        evm_loader.deposit_neon(operator_keypair, sender.eth_address, 1000000)
         contract = deploy_contract(operator_keypair, session_user, "transfers", evm_loader, treasury_pool)
 
         amount = evm_loader.get_neon_balance(sender.eth_address)
@@ -523,7 +519,7 @@ class TestAccountRevision:
         )
         sender_balance_before = evm_loader.get_neon_balance(sender_with_tokens.eth_address)
 
-        signed_tx1 = make_contract_call_trx(sender_with_tokens, contract, "donateTenPercent()")
+        signed_tx1 = make_contract_call_trx(evm_loader, sender_with_tokens, contract, "donateTenPercent()")
         accounts = [
             sender_with_tokens.balance_account_address,
             sender_with_tokens.solana_account_address,
@@ -531,31 +527,30 @@ class TestAccountRevision:
             contract.solana_address,
         ]
 
-        write_transaction_to_holder_account(signed_tx1, holder_acc, operator_keypair)
-        send_transaction_step_from_account(
-            operator_keypair, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
+        operator_balance_pubkey = evm_loader.get_operator_balance_pubkey(operator_keypair)
+        evm_loader.write_transaction_to_holder_account(signed_tx1, holder_acc, operator_keypair)
+        evm_loader.send_transaction_step_from_account(
+            operator_keypair, operator_balance_pubkey, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
         )
-        send_transaction_step_from_account(
-            operator_keypair, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
+        evm_loader.send_transaction_step_from_account(
+            operator_keypair, operator_balance_pubkey, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
         )
 
-        signed_tx2 = make_contract_call_trx(sender_with_tokens, contract, "donateTenPercent()")
+        signed_tx2 = make_contract_call_trx(evm_loader, sender_with_tokens, contract, "donateTenPercent()")
 
-        resp = execute_trx_from_instruction(
+        resp = evm_loader.execute_trx_from_instruction(
             operator_keypair,
-            evm_loader,
             treasury_pool.account,
             treasury_pool.buffer,
             signed_tx2,
-            accounts,
-            operator_keypair,
+            accounts
         )
-        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+        check_transaction_logs_have_text(resp, "exit_status=0x11")
 
-        resp = send_transaction_step_from_account(
-            operator_keypair, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
+        resp = evm_loader.send_transaction_step_from_account(
+            operator_keypair, operator_balance_pubkey, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
         )
-        check_transaction_logs_have_text(resp.value.transaction.transaction.signatures[0], "exit_status=0x11")
+        check_transaction_logs_have_text(resp, "exit_status=0x11")
         check_holder_account_tag(holder_acc, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
 
         assert evm_loader.get_neon_balance(contract.eth_address) == 900

@@ -4,10 +4,9 @@ from Crypto.Hash import keccak
 from solana.publickey import PublicKey
 from web3.auto import w3
 
-from utils.evm_loader import CHAIN_ID
-from ..types.types import Caller, Contract
+from utils.evm_loader import CHAIN_ID, EvmLoader
+from utils.types import Caller, Contract
 from .eth_tx_utils import pack
-from ..solana_utils import EvmLoader
 
 
 def create_contract_address(user: Caller, evm_loader: EvmLoader) -> Contract:

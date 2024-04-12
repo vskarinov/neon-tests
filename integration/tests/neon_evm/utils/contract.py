@@ -7,11 +7,13 @@ from eth_account.datastructures import SignedTransaction
 from eth_utils import abi
 from solana.keypair import Keypair
 
+from utils.evm_loader import EvmLoader
+from utils.types import Caller, TreasuryPool, Contract
 from .transaction_checks import check_transaction_logs_have_text
-from ..types.types import Caller, Contract, TreasuryPool
-from ..solana_utils import EvmLoader
+
 from .storage import create_holder
 from .ethereum import create_contract_address, make_eth_transaction
+from semantic_version import Version
 
 from web3.auto import w3
 
@@ -40,7 +42,7 @@ def get_contract_bin(
     compiled = solcx.compile_files(
         [contract_path],
         output_values=["abi", "bin"],
-        solc_version=version,
+        solc_version=Version(version),
         allow_paths=["."],
         optimize=True,
     )
@@ -117,9 +119,10 @@ def deploy_contract(
 ):
     contract: Contract = create_contract_address(user, evm_loader)
     holder_acc = create_holder(operator, evm_loader)
-    signed_tx = make_deployment_transaction(evm_loader, user, contract_file_name, contract_name, encoded_args=encoded_args, value=value)
+    signed_tx = make_deployment_transaction(
+        evm_loader, user, contract_file_name, contract_name, encoded_args=encoded_args, value=value
+    )
     evm_loader.write_transaction_to_holder_account(signed_tx, holder_acc, operator)
-
 
     resp = evm_loader.execute_transaction_steps_from_account(
         operator,

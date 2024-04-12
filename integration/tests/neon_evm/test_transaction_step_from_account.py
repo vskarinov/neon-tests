@@ -13,14 +13,13 @@ from utils.evm_loader import EVM_STEPS
 from utils.helpers import gen_hash_of_block
 from utils.instructions import TransactionWithComputeBudget, make_ExecuteTrxFromAccountDataIterativeOrContinue
 from utils.layouts import FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT
-from .solana_utils import create_treasury_pool_address
+from utils.types import TreasuryPool
 from .utils.assert_messages import InstructionAsserts
 from .utils.constants import TAG_FINALIZED_STATE
 from .utils.contract import make_deployment_transaction, make_contract_call_trx, deploy_contract
 from .utils.ethereum import make_eth_transaction, create_contract_address
 from .utils.storage import create_holder
 from .utils.transaction_checks import check_transaction_logs_have_text, check_holder_account_tag
-from .types.types import TreasuryPool
 
 
 def generate_access_lists():
@@ -363,7 +362,7 @@ class TestTransactionStepFromAccount:
         evm_loader.write_transaction_to_holder_account(signed_tx, holder_acc, operator_keypair)
 
         index = 2
-        treasury = TreasuryPool(index, create_treasury_pool_address(index), (index + 1).to_bytes(4, "little"))
+        treasury = TreasuryPool(index, evm_loader.create_treasury_pool_address(index), (index + 1).to_bytes(4, "little"))
 
         error = str.format(InstructionAsserts.INVALID_ACCOUNT, treasury.account)
         with pytest.raises(solana.rpc.core.RPCException, match=error):
@@ -785,8 +784,7 @@ class TestStepFromAccountChangingOperatorsDuringTrxRun:
         operator_keypair,
         second_operator_keypair,
         treasury_pool,
-        new_holder_acc,
-        solana_client,
+        new_holder_acc
     ):
         signed_tx = make_contract_call_trx(
             evm_loader, user_account, rw_lock_contract, "update_storage_str(string)", ["text"]
@@ -810,7 +808,7 @@ class TestStepFromAccountChangingOperatorsDuringTrxRun:
                 ],
             )
         )
-        solana_client.send_tx(trx, operator_keypair)
+        evm_loader.send_tx(trx, operator_keypair)
         second_operator_balance = evm_loader.get_operator_balance_pubkey(second_operator_keypair)
         # send from the second operator
         evm_loader.send_transaction_step_from_account(

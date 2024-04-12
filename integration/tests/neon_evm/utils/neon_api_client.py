@@ -3,7 +3,7 @@ import requests
 from eth_utils import abi
 
 from utils.evm_loader import CHAIN_ID
-from ..types.types import Caller, Contract
+from utils.types import Caller, Contract
 
 
 class NeonApiClient:

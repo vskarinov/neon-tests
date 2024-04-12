@@ -11,39 +11,37 @@ from solana.rpc.commitment import Confirmed
 
 from utils.evm_loader import EvmLoader
 from utils.solana_client import SolanaClient
-from .solana_utils import create_treasury_pool_address, make_new_user, \
-    deposit_neon, wait_for_account_to_exists
+from utils.types import Contract, Caller, TreasuryPool
 from .utils.constants import NEON_CORE_API_URL, NEON_CORE_API_RPC_URL, SOLANA_URL, EVM_LOADER
 from .utils.contract import deploy_contract
 from .utils.neon_api_rpc_client import NeonApiRpcClient
 from .utils.storage import create_holder
-from .types.types import TreasuryPool, Caller, Contract
 from .utils.neon_api_client import NeonApiClient
 
 KEY_PATH = pathlib.Path(__file__).parent / "operator-keypairs"
 
 
 @pytest.fixture(scope="session")
-def evm_loader(solana_client: SolanaClient) -> EvmLoader:
-    loader = EvmLoader(EVM_LOADER, solana_client)
+def evm_loader() -> EvmLoader:
+   # solana_client = SolanaClient(SOLANA_URL)
+    loader = EvmLoader(EVM_LOADER, SOLANA_URL)
     return loader
 
-@pytest.fixture(scope="session")
-def solana_client():
-    return SolanaClient(SOLANA_URL)
+# @pytest.fixture(scope="session")
+# def solana_client():
+#     return SolanaClient(SOLANA_URL)
 
 def prepare_operator(key_file, evm_loader):
     with open(key_file, "r") as key:
         secret_key = json.load(key)[:32]
         account = Keypair.from_secret_key(secret_key)
 
-    evm_loader.sol_client.request_airdrop(account.public_key, 1000 * 10 ** 9, commitment=Confirmed)
-    wait_for_account_to_exists(evm_loader.sol_client, account.public_key)
+    evm_loader.request_airdrop(account.public_key, 1000 * 10 ** 9, commitment=Confirmed)
 
     operator_ether = eth_keys.PrivateKey(account.secret_key[:32]).public_key.to_canonical_address()
 
     ether_balance_pubkey = evm_loader.ether2balance(operator_ether)
-    acc_info = evm_loader.sol_client.get_account_info(ether_balance_pubkey, commitment=Confirmed)
+    acc_info = evm_loader.get_account_info(ether_balance_pubkey, commitment=Confirmed)
     if acc_info.value is None:
         evm_loader.create_balance_account(operator_ether, account)
 
@@ -89,30 +87,30 @@ def second_operator_keypair(worker_id, evm_loader) -> Keypair:
 @pytest.fixture(scope="session")
 def treasury_pool(evm_loader) -> TreasuryPool:
     index = 2
-    address = create_treasury_pool_address(index)
+    address = evm_loader.create_treasury_pool_address(index)
     index_buf = index.to_bytes(4, 'little')
     return TreasuryPool(index, address, index_buf)
 
 
 @pytest.fixture(scope="function")
 def user_account(evm_loader, operator_keypair) -> Caller:
-    return make_new_user(evm_loader, operator_keypair)
+    return evm_loader.make_new_user(operator_keypair)
 
 
 @pytest.fixture(scope="session")
 def session_user(evm_loader, operator_keypair) -> Caller:
-    return make_new_user(evm_loader, operator_keypair)
+    return evm_loader.make_new_user(operator_keypair)
 
 
 @pytest.fixture(scope="session")
 def second_session_user(evm_loader, operator_keypair) -> Caller:
-    return make_new_user(evm_loader, operator_keypair)
+    return evm_loader.make_new_user(operator_keypair)
 
 
 @pytest.fixture(scope="session")
 def sender_with_tokens(evm_loader, operator_keypair) -> Caller:
-    user = make_new_user(evm_loader, operator_keypair)
-    deposit_neon(evm_loader, operator_keypair, user.eth_address, 100000)
+    user = evm_loader.make_new_user(operator_keypair)
+    evm_loader.deposit_neon(operator_keypair, user.eth_address, 100000)
     return user
 
 

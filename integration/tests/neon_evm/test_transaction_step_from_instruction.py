@@ -15,14 +15,13 @@ from solana.rpc.commitment import Confirmed
 from solana.rpc.core import RPCException
 
 from utils.layouts import FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT
-from .solana_utils import create_treasury_pool_address
+from utils.types import TreasuryPool
 from .utils.assert_messages import InstructionAsserts
 from .utils.constants import TAG_FINALIZED_STATE
 from .utils.contract import make_deployment_transaction, make_contract_call_trx, deploy_contract
 from .utils.ethereum import make_eth_transaction, create_contract_address
 from .utils.storage import create_holder
 from .utils.transaction_checks import check_transaction_logs_have_text, check_holder_account_tag
-from .types.types import TreasuryPool
 
 
 class TestTransactionStepFromInstruction:
@@ -131,7 +130,7 @@ class TestTransactionStepFromInstruction:
         sender_balance_before = evm_loader.get_neon_balance(sender_with_tokens.eth_address)
         contract_balance_before = evm_loader.get_neon_balance(string_setter_contract.eth_address)
 
-        text = "".join(random.choice(string.ascii_letters) for i in range(10))
+        text = "".join(random.choice(string.ascii_letters) for _ in range(10))
         signed_tx = make_contract_call_trx(
             evm_loader, sender_with_tokens, string_setter_contract, "set(string)", [text], value=transfer_amount
         )
@@ -364,7 +363,7 @@ class TestTransactionStepFromInstruction:
     def test_incorrect_treasure_index(self, operator_keypair, sender_with_tokens, evm_loader, session_user, holder_acc):
         signed_tx = make_eth_transaction(evm_loader, session_user.eth_address, None, sender_with_tokens, 1)
         index = 2
-        treasury = TreasuryPool(index, create_treasury_pool_address(index), (index + 1).to_bytes(4, "little"))
+        treasury = TreasuryPool(index, evm_loader.create_treasury_pool_address(index), (index + 1).to_bytes(4, "little"))
 
         error = str.format(InstructionAsserts.INVALID_ACCOUNT, treasury.account)
         with pytest.raises(solana.rpc.core.RPCException, match=error):

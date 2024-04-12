@@ -1,17 +1,18 @@
 import typing as tp
+from hashlib import sha256
 
-from eth_keys import keys as eth_keys
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
 import solana.system_program as sp
 from solana.transaction import AccountMeta, TransactionInstruction, Transaction
 
-from utils.consts import COMPUTE_BUDGET_ID, TreasuryPool
+from utils.consts import COMPUTE_BUDGET_ID
 from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
 from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID
 from spl.token.instructions import get_associated_token_address
 
+from utils.types import TreasuryPool
 
 DEFAULT_UNITS = 1_400_000
 DEFAULT_HEAP_FRAME = 256 * 1024
@@ -53,7 +54,9 @@ class TransactionWithComputeBudget(Transaction):
             self.add(ComputeBudget.request_heap_frame(operator, heap_frame))
 
 
-def make_WriteHolder(operator: PublicKey, evm_loader_id: PublicKey, holder_account: PublicKey, hash: bytes, offset: int, payload: bytes):
+def make_WriteHolder(
+    operator: PublicKey, evm_loader_id: PublicKey, holder_account: PublicKey, hash: bytes, offset: int, payload: bytes
+):
     d = bytes([0x26]) + hash + offset.to_bytes(8, byteorder="little") + payload
 
     return TransactionInstruction(
@@ -141,7 +144,7 @@ def make_ExecuteTrxFromAccountDataIterativeOrContinue(
     operator_balance: PublicKey,
     evm_loader_id: PublicKey,
     holder_address: PublicKey,
-    treasury,#: TreasuryPool,
+    treasury,  #: TreasuryPool,
     additional_accounts: tp.List[PublicKey],
     sys_program_id=sp.SYS_PROGRAM_ID,
     tag=0x35,
@@ -182,7 +185,7 @@ def make_PartialCallOrContinueFromRawEthereumTX(
     treasury: TreasuryPool,
     additional_accounts: tp.List[PublicKey],
     system_program=sp.SYS_PROGRAM_ID,
-    tag=0x34, #TransactionStepFromInstruction
+    tag=0x34,  # TransactionStepFromInstruction
 ):
     data = bytes([tag]) + treasury.buffer + step_count.to_bytes(4, "little") + index.to_bytes(4, "little") + instruction
 
@@ -274,15 +277,18 @@ def make_CreateAssociatedTokenIdempotent(payer: PublicKey, owner: PublicKey, min
         program_id=ASSOCIATED_TOKEN_PROGRAM_ID,
     )
 
-def make_CreateBalanceAccount(evm_loader_id: PublicKey,
-                              sender_pubkey: PublicKey,
-                              ether_address: bytes,
-                              account_pubkey:PublicKey,
-                              contract_pubkey:PublicKey,
-                              chain_id) -> TransactionInstruction:
-    print('createBalanceAccount: {}'.format(account_pubkey))
 
-    data = bytes([0x30]) + ether_address + chain_id.to_bytes(8, 'little')
+def make_CreateBalanceAccount(
+    evm_loader_id: PublicKey,
+    sender_pubkey: PublicKey,
+    ether_address: bytes,
+    account_pubkey: PublicKey,
+    contract_pubkey: PublicKey,
+    chain_id,
+) -> TransactionInstruction:
+    print("createBalanceAccount: {}".format(account_pubkey))
+
+    data = bytes([0x30]) + ether_address + chain_id.to_bytes(8, "little")
     return TransactionInstruction(
         program_id=evm_loader_id,
         data=data,
@@ -291,4 +297,45 @@ def make_CreateBalanceAccount(evm_loader_id: PublicKey,
             AccountMeta(pubkey=sp.SYS_PROGRAM_ID, is_signer=False, is_writable=False),
             AccountMeta(pubkey=account_pubkey, is_signer=False, is_writable=True),
             AccountMeta(pubkey=contract_pubkey, is_signer=False, is_writable=True),
-        ])
+        ],
+    )
+
+
+def make_SyncNative(account: PublicKey):
+    keys = [AccountMeta(pubkey=account, is_signer=False, is_writable=True)]
+    data = bytes.fromhex("11")
+    return TransactionInstruction(keys=keys, program_id=TOKEN_PROGRAM_ID, data=data)
+
+
+def make_CreateAccountWithSeed(funding, base, seed, lamports, space, program):
+    created = PublicKey(sha256(bytes(base) + bytes(seed, "utf8") + bytes(program)).digest())
+    print(f"Created: {created}")
+    return sp.create_account_with_seed(
+        sp.CreateAccountWithSeedParams(
+            from_pubkey=funding,
+            new_account_pubkey=created,
+            base_pubkey=base,
+            seed=seed,
+            lamports=lamports,
+            space=space,
+            program_id=program,
+        )
+    )
+
+
+def make_CreateHolderAccount(account, operator, seed, evm_loader_id):
+    return TransactionInstruction(
+        keys=[
+            AccountMeta(pubkey=account, is_signer=False, is_writable=True),
+            AccountMeta(pubkey=operator, is_signer=True, is_writable=False),
+        ],
+        program_id=evm_loader_id,
+        data=bytes.fromhex("24") + len(seed).to_bytes(8, "little") + seed,
+    )
+
+def make_wSOL(amount, solana_wallet, ata_address):
+    tx = Transaction(fee_payer=solana_wallet)
+    tx.add(sp.transfer(sp.TransferParams(solana_wallet, ata_address, amount)))
+    tx.add(make_SyncNative(ata_address))
+
+    return tx

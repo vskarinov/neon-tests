@@ -11,7 +11,7 @@ from .utils.transaction_checks import check_holder_account_tag
 #  We need test here two types of transaction
 class TestCancelTrx:
 
-    def test_cancel_trx(self, operator_keypair, rw_lock_contract, user_account, treasury_pool, evm_loader, solana_client):
+    def test_cancel_trx(self, operator_keypair, rw_lock_contract, user_account, treasury_pool, evm_loader):
         """EVM can cancel transaction and finalize storage account"""
         signed_tx = make_contract_call_trx(evm_loader, user_account, rw_lock_contract, "unchange_storage(uint8,uint8)", [1, 1])
 
@@ -37,6 +37,6 @@ class TestCancelTrx:
                          rw_lock_contract.balance_account_address,
                          user_account.balance_account_address])
         )
-        solana_client.send_tx(trx, operator_keypair)
+        evm_loader.send_tx(trx, operator_keypair)
         check_holder_account_tag(storage_account, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
         assert user_nonce_after_first_step == evm_loader.get_neon_nonce(user_account.eth_address)

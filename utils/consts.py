@@ -44,11 +44,6 @@ class InputTestConstants(Enum):
     SAMPLE_AMOUNT = 0.5
     ROUND_DIGITS = 3
 
-@dataclass
-class TreasuryPool:
-    index: int
-    account: PublicKey
-    buffer: bytes
 
 
 wSOL = {

@@ -13,12 +13,12 @@ from solana.publickey import PublicKey
 from solana.rpc.commitment import Confirmed
 from spl.token.instructions import get_associated_token_address
 
+from utils.types import Caller, Contract
 from .utils.assert_messages import InstructionAsserts
 from .utils.constants import NEON_TOKEN_MINT_ID
 from .utils.contract import make_contract_call_trx
 from .utils.ethereum import make_eth_transaction
 from .utils.transaction_checks import check_transaction_logs_have_text
-from .types.types import Caller, Contract
 
 
 class TestExecuteTrxFromInstruction:

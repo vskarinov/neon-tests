@@ -3,9 +3,10 @@ import base64
 from solana.rpc.commitment import Confirmed
 from solders.rpc.responses import GetTransactionResp
 
-from ..solana_utils import solana_client
+from integration.tests.neon_evm.utils.constants import SOLANA_URL
+from utils.solana_client import SolanaClient
 
-
+solana_client = SolanaClient(SOLANA_URL)
 
 def check_transaction_logs_have_text(trx, text):
     if isinstance(trx, GetTransactionResp):
