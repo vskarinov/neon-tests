@@ -307,10 +307,8 @@ class Web3Client:
         if not isinstance(address, str):
             address = address.address
         balance = self._web3.eth.get_balance(address, "pending")
-        print(f"========== get_balance Balance: {balance}")
         if unit != Unit.WEI:
             balance = self._web3.from_wei(balance, unit.value)
-            print(f"========== get_balance NOT WEI: unit {unit} balance {balance}")
         return balance
 
     @allure.step("Get deployed contract")
