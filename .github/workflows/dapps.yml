@@ -754,14 +754,9 @@ jobs:
   notify:
     runs-on: ubuntu-20.04
     needs: [prepare, uniswap-v2, uniswap-v3, saddle, aave, curve, robonomics, yearn, compound, curve-factory, pancake]
-    if: failure() && github.ref_name == 'develop'
+    if: failure() && github.ref_name == 'develop' && !inputs.external_call
     steps:
       - uses: actions/checkout@v4
-      - if: ${{ inputs.external_call }}
-        uses: actions/checkout@v4
-        with:
-          repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
