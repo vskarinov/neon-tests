@@ -44,7 +44,7 @@ on:
     inputs:
         network:
           type: string
-          default: terraform
+          default: custom
           required: true
           description: "Stand name"
         dapps:
