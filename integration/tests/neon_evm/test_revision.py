@@ -12,7 +12,7 @@ from integration.tests.neon_evm.solana_utils import (
     deposit_neon,
 )
 
-from .utils.constants import TAG_FINALIZED_STATE
+from .utils.constants import TAG_FINALIZED_STATE, TAG_ACTIVE_STATE
 from .utils.contract import make_contract_call_trx, deploy_contract
 
 from .utils.layouts import FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT
@@ -260,9 +260,12 @@ class TestAccountRevision:
         send_transaction_steps(holder1, sender1)
         send_transaction_steps(holder2, sender2)
         resp1 = send_transaction_steps(holder1, sender1)
-        resp2 = send_transaction_steps(holder2, sender2)
+        send_transaction_steps(holder2, sender2)
         check_transaction_logs_have_text(resp1.value.transaction.transaction.signatures[0], "exit_status=0x11")
         check_holder_account_tag(holder1, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
+
+        resp2 = send_transaction_steps(holder2, sender2) #the transaction was restarted
+        check_holder_account_tag(holder2, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
         check_transaction_logs_have_text(resp2.value.transaction.transaction.signatures[0], "exit_status=0x11")
         check_holder_account_tag(holder2, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
         for acc in recipients:
@@ -375,9 +378,14 @@ class TestAccountRevision:
         )
         check_transaction_logs_have_text(resp.value, "exit_status=0x11")
 
-        resp = send_transaction_step_from_account(
+        send_transaction_step_from_account(
             operator_keypair, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
         )
+        check_holder_account_tag(holder_acc, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_ACTIVE_STATE)
+
+        resp = send_transaction_step_from_account(
+            operator_keypair, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
+        ) #the transaction was restarted
         check_transaction_logs_have_text(resp.value.transaction.transaction.signatures[0], "exit_status=0x11")
         check_holder_account_tag(holder_acc, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
         for acc in recipients:

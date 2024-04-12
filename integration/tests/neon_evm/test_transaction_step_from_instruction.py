@@ -18,7 +18,7 @@ from solana.rpc.core import RPCException
 from .solana_utils import execute_transaction_steps_from_instruction, \
     create_treasury_pool_address, send_transaction_step_from_instruction, EVM_STEPS
 from .utils.assert_messages import InstructionAsserts
-from .utils.constants import TAG_FINALIZED_STATE
+from .utils.constants import TAG_FINALIZED_STATE, TAG_ACTIVE_STATE
 from .utils.contract import make_deployment_transaction, make_contract_call_trx, deploy_contract, get_contract_bin
 from .utils.ethereum import make_eth_transaction, create_contract_address
 from .utils.layouts import FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT
@@ -467,6 +467,8 @@ class TestTransactionStepFromInstructionParallelRuns:
         send_transaction_steps(new_holder_acc, rw_lock_contract, signed_tx)
         send_transaction_steps(holder_acc2, string_setter_contract, signed_tx2)
         check_holder_account_tag(new_holder_acc, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
+        check_holder_account_tag(holder_acc2, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_ACTIVE_STATE)
+        send_transaction_steps(holder_acc2, string_setter_contract, signed_tx2)
         check_holder_account_tag(holder_acc2, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
 
     def test_2_users_call_the_same_contract(self, rw_lock_contract, user_account,
