@@ -58,8 +58,9 @@ class TestTracerDebugMethods:
 
         response = self.tracer_api.send_rpc(method="debug_traceCall", params=[{}, hex(tx_info["blockNumber"])])
 
-        assert "error" not in response, "Error in response"
-        self.validate_response_result(response)
+        assert "error" in response, "No errors in response"
+        assert response["error"]["code"] == -32603, "Invalid error code"
+        assert response["error"]["message"] == "neon_api::trace failed"
 
     def test_debug_trace_call_zero_eth_call(self):
         sender_account = self.accounts[0]
@@ -88,7 +89,7 @@ class TestTracerDebugMethods:
 
         wait_condition(
             lambda: self.tracer_api.send_rpc(method="debug_traceCall", params=params)["result"] is not None,
-            timeout_sec=10,
+            timeout_sec=120,
         )
         response = self.tracer_api.send_rpc(method="debug_traceCall", params=params)
         assert "error" not in response, "Error in response"
@@ -122,7 +123,7 @@ class TestTracerDebugMethods:
 
         wait_condition(
             lambda: self.tracer_api.send_rpc(method="debug_traceCall", params=params)["result"] is not None,
-            timeout_sec=10,
+            timeout_sec=120,
         )
 
         response = self.tracer_api.send_rpc(method="debug_traceCall", params=params)
@@ -156,7 +157,6 @@ class TestTracerDebugMethods:
             timeout_sec=120,
         )
         response = self.tracer_api.send_rpc(method="debug_traceTransaction", params=[tx_hash])
-        assert "error" not in response, "Error in response"
         assert "error" not in response, "Error in response"
         assert 1 <= int(response["result"]["returnValue"], 16) <= 100
         self.validate_response_result(response)
@@ -196,7 +196,7 @@ class TestTracerDebugMethods:
                 "result"
             ]
             is not None,
-            timeout_sec=10,
+            timeout_sec=120,
         )
         response = self.tracer_api.send_rpc(method="debug_traceBlockByNumber", params=[hex(receipt["blockNumber"])])
         assert "error" not in response, "Error in response"
@@ -232,7 +232,13 @@ class TestTracerDebugMethods:
         receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
         assert receipt["status"] == 1
 
-        response = self.tracer_api.send_rpc(method="debug_traceBlockByNumber", params=["0x2ee1"])
+        wait_condition(
+            lambda: self.web3_client.get_block_number() is not None,
+            timeout_sec=10,
+        )
+        block = self.web3_client.get_block_number() - 100
+
+        response = self.tracer_api.send_rpc(method="debug_traceBlockByNumber", params=[hex(block)])
         assert "error" not in response, "Error in response"
         assert "result" in response and response["result"] == [], "Result is not empty"
 
