@@ -134,7 +134,7 @@ def check_profitability(func: tp.Callable) -> tp.Callable:
         def get_tokens_balances(operator: Operator) -> tp.Dict:
             """Return tokens balances"""
             return dict(
-                neon=operator.get_token_balance(),
+                neon=operator.get_token_balance() / 1_000_000_000_000_000_000,
                 sol=operator.get_solana_balance() / 1_000_000_000,
             )
 
