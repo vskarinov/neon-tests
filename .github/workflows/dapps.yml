@@ -110,7 +110,7 @@ jobs:
       - prepare
     uses: ./.github/workflows/dapps_reusable.yml
     with:
-      network: custom
+      network: terraform
       dapps: ${{ needs.prepare.outputs.dapps }}
       proxy_url: ${{ needs.prepare.outputs.proxy_url }}
       solana_url: ${{ needs.prepare.outputs.solana_url }}

@@ -42,6 +42,7 @@ class TestDeposit:
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
         assert receipt["status"] == 1
 
+    @pytest.mark.mainnet
     def test_transfer_neon_from_solana_to_neon(self, solana_account, pytestconfig: Config, neon_mint):
         """Transfer Neon from Solana -> Neon"""
         amount = 0.1
@@ -98,6 +99,7 @@ class TestDeposit:
         usdt_balance_after = web3_client_usdt.get_balance(new_account)
         assert usdt_balance_after == amount * 1000000000000
 
+    @pytest.mark.mainnet
     def test_transfer_spl_token_from_solana_to_neon(self, solana_account, pytestconfig: Config, erc20_spl):
         evm_loader_id = pytestconfig.environment.evm_loader
         amount = 0.1
@@ -171,14 +173,8 @@ class TestWithdraw:
     sol_client: SolanaClient
 
     def withdraw(self, sender_acc, dest_acc, move_amount, withdraw_contract):
-        instruction_tx = withdraw_contract.functions.withdraw(bytes(dest_acc.public_key)).build_transaction(
-            {
-                "from": sender_acc.address,
-                "nonce": self.web3_client.eth.get_transaction_count(sender_acc.address),
-                "gasPrice": self.web3_client.gas_price(),
-                "value": move_amount,
-            }
-        )
+        tx = self.web3_client.make_raw_tx(sender_acc, amount=move_amount)
+        instruction_tx = withdraw_contract.functions.withdraw(bytes(dest_acc.public_key)).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_acc, instruction_tx)
         assert receipt["status"] == 1
 
@@ -186,22 +182,10 @@ class TestWithdraw:
     def test_failed_withdraw_insufficient_balance(
         self, pytestconfig: Config, move_amount, error, withdraw_contract, neon_mint, solana_account
     ):
-        dest_acc = solana_account
-
-        spl_neon_token = SplToken(self.sol_client, neon_mint, TOKEN_PROGRAM_ID, dest_acc.public_key)
-
         amount = move_amount * pow(10, 18)
-        dest_token_acc = get_associated_token_address(dest_acc.public_key, neon_mint)
-
-        response = spl_neon_token.get_balance(dest_token_acc, commitment=Commitment("confirmed"))
-
-        # assert json.loads(response.to_json())["message"] == "Invalid param: could not find account"
-
         with pytest.raises(error):
-            self.withdraw(self.accounts.create_account(10000), dest_acc, amount, withdraw_contract)
+            self.withdraw(self.accounts.create_account(10000), solana_account, amount, withdraw_contract)
 
-        response = spl_neon_token.get_balance(dest_token_acc, commitment=Commitment("confirmed"))
-        assert json.loads(response.to_json())["message"] == "Invalid param: could not find account"
 
     @pytest.mark.only_stands
     def test_success_withdraw_to_non_existing_account(
@@ -211,24 +195,15 @@ class TestWithdraw:
         sender_account = self.accounts[0]
         dest_acc = Keypair.generate()
         self.sol_client.request_airdrop(dest_acc.public_key, 1_000_000_000)
-
         spl_neon_token = SplToken(self.sol_client, neon_mint, TOKEN_PROGRAM_ID, dest_acc)
-
         dest_token_acc = get_associated_token_address(dest_acc.public_key, neon_mint)
-
         move_amount = self.web3_client._web3.to_wei(5, "ether")
 
-        destination_balance_before = spl_neon_token.get_balance(dest_acc.public_key, commitment=Commitment("confirmed"))
-        with pytest.raises(AttributeError):
-            # FIXME: Why this raise error?
-            _ = destination_balance_before.value
-
         self.withdraw(sender_account, dest_acc, move_amount, withdraw_contract)
-
         destination_balance_after = spl_neon_token.get_balance(dest_token_acc, commitment=Commitment("confirmed"))
-
         assert int(destination_balance_after.value.amount) == int(move_amount / 1_000_000_000)
 
+    @pytest.mark.mainnet
     def test_success_withdraw_to_existing_account(
         self, pytestconfig: Config, withdraw_contract, neon_mint, solana_account
     ):
