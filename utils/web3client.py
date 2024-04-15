@@ -17,7 +17,8 @@ from utils import helpers
 from utils.consts import InputTestConstants, Unit
 from utils.helpers import decode_function_signature
 
-LOG=logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
+
 
 class Web3Client:
     def __init__(
@@ -342,7 +343,7 @@ class Web3Client:
         signed_tx = self.eth.account.sign_transaction(transaction, from_.key)
         tx = self.eth.send_raw_transaction(signed_tx.rawTransaction)
         return self.eth.wait_for_transaction_receipt(tx)
-    
+
     @allure.step("Send all neons from one account to another")
     def send_all_neons(
         self,
@@ -356,7 +357,7 @@ class Web3Client:
         transaction = self.make_raw_tx(
             from_, to, amount=value, gas=gas, gas_price=gas_price, nonce=nonce, estimate_gas=True
         )
-        transaction["value"] = float(value) - float(transaction["gas"]*transaction["gasPrice"]*1.1)
+        transaction["value"] = float(value) - float(transaction["gas"] * transaction["gasPrice"] * 1.1)
 
         if transaction["value"] > 0:
             transaction["value"] = web3.Web3.to_wei(transaction["value"], Unit.WEI)

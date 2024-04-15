@@ -131,10 +131,13 @@ def check_profitability(func: tp.Callable) -> tp.Callable:
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> None:
+        network = network_manager.get_network_object(args[0])
+        w3client = web3client.NeonChainWeb3Client(network["proxy_url"])
+
         def get_tokens_balances(operator: Operator) -> tp.Dict:
             """Return tokens balances"""
             return dict(
-                neon=operator.get_token_balance(),
+                neon=w3client.to_main_currency(operator.get_token_balance()),
                 sol=operator.get_solana_balance() / 1_000_000_000,
             )
 
@@ -142,14 +145,13 @@ def check_profitability(func: tp.Callable) -> tp.Callable:
             return dict(map(lambda i: (i[0], str(i[1])), d.items()))
 
         if os.environ.get("OZ_BALANCES_REPORT_FLAG") is not None:
-            network = network_manager.get_network_object(args[0])
             op = Operator(
                 network["proxy_url"],
                 network["solana_url"],
                 network["operator_neon_rewards_address"],
                 network["spl_neon_mint"],
                 network["operator_keys"],
-                web3_client=NeonChainWeb3Client(network["proxy_url"]),
+                web3_client=w3client,
             )
             pre = get_tokens_balances(op)
             try:
