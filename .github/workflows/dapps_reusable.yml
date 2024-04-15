@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -86,14 +86,14 @@ jobs:
         run: |
           test -t 1 && USE_TTY="-t"
           docker pull ${{ env.IMAGE }}
-          docker run -i ${USE_TTY} --name=uniswap-v2-${{ github.run_id }} \
+          docker run -i ${USE_TTY} --name=uniswap-v2-${{ github.run_number }} \
             -e NEON_PROXY_URL=${{ env.PROXY_URL }} \
             -e NEON_ACCOUNTS=${{ env.ACCOUNTS }} \
             -e NEON_CHAIN_ID=${{ env.NETWORK_ID }} \
             --entrypoint /bin/bash ${{ env.IMAGE }} \
             -c "npx hardhat run /usr/src/app/scripts/deploy.ts"
-          docker cp uniswap-v2-${{ github.run_id }}:/usr/src/app/report.json uniswap-v2-report.json
-          docker rm -f uniswap-v2-${{ github.run_id }}
+          docker cp uniswap-v2-${{ github.run_number }}:/usr/src/app/report.json uniswap-v2-report.json
+          docker rm -f uniswap-v2-${{ github.run_number }}
 
       - name: Save report
         uses: actions/upload-artifact@v3
@@ -117,7 +117,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -137,13 +137,13 @@ jobs:
         run: |
           test -t 1 && USE_TTY="-t"
           docker pull ${{ env.IMAGE }}
-          docker run -i ${USE_TTY} --name=uniswap-v3-${{ github.run_id }} \
+          docker run -i ${USE_TTY} --name=uniswap-v3-${{ github.run_number }} \
             -e NEON_PROXY_URL=${{ env.PROXY_URL }} \
             -e NEON_ACCOUNTS=${{ env.ACCOUNTS }} \
             -e NEON_CHAIN_ID=${{ env.NETWORK_ID }} \
             ${{ env.IMAGE }}
-          docker cp uniswap-v3-${{ github.run_id }}:/usr/src/app/report.json uniswap-v3-report.json
-          docker rm -f uniswap-v3-${{ github.run_id }}
+          docker cp uniswap-v3-${{ github.run_number }}:/usr/src/app/report.json uniswap-v3-report.json
+          docker rm -f uniswap-v3-${{ github.run_number }}
 
       - name: Save report
         uses: actions/upload-artifact@v3
@@ -167,7 +167,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -186,16 +186,16 @@ jobs:
           IMAGE: neonlabsorg/saddle_tests:latest
         run: |
           docker pull ${{ env.IMAGE }}
-          docker run -i -d --name=saddle-${{ github.run_id }} ${{ env.IMAGE }} /bin/bash
+          docker run -i -d --name=saddle-${{ github.run_number }} ${{ env.IMAGE }} /bin/bash
           env_args="-e NEON_PROXY_URL=${{env.PROXY_URL}} -e NEON_ACCOUNTS=${{ env.ACCOUNTS }} -e NEON_CHAIN_ID=${{ env.NETWORK_ID }}"
           echo "Run Saddle 2 tokens pool tests"
-          docker exec -i $env_args saddle-${{ github.run_id }} npx hardhat run /usr/src/app/scripts/deploy2Tokens.ts
+          docker exec -i $env_args saddle-${{ github.run_number }} npx hardhat run /usr/src/app/scripts/deploy2Tokens.ts
           echo "Run Saddle 3 tokens pool tests"
-          docker exec -i $env_args saddle-${{ github.run_id }} npx hardhat run /usr/src/app/scripts/deploy3Tokens.ts
+          docker exec -i $env_args saddle-${{ github.run_number }} npx hardhat run /usr/src/app/scripts/deploy3Tokens.ts
           echo "Run Saddle MetaPool tests"
-          docker exec -i $env_args saddle-${{ github.run_id }} npx hardhat run /usr/src/app/scripts/deployMetaPool.ts
-          docker cp saddle-${{ github.run_id }}:/usr/src/app/report.json saddle-report.json
-          docker rm -f saddle-${{ github.run_id }}
+          docker exec -i $env_args saddle-${{ github.run_number }} npx hardhat run /usr/src/app/scripts/deployMetaPool.ts
+          docker cp saddle-${{ github.run_number }}:/usr/src/app/report.json saddle-report.json
+          docker rm -f saddle-${{ github.run_number }}
 
       - name: Save report
         uses: actions/upload-artifact@v3
@@ -218,7 +218,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -237,10 +237,10 @@ jobs:
           IMAGE: neonlabsorg/aave_tests:latest
         run: |
           docker pull ${{ env.IMAGE }} 
-          docker run -i -d --name=aave-${{ github.run_id }} ${{ env.IMAGE }} /bin/bash
-          docker exec -i -e NEON_PROXY_URL=${{env.PROXY_URL}} -e NEON_ACCOUNTS=${{ env.ACCOUNTS }} -e NEON_CHAIN_ID=${{ env.NETWORK_ID }} aave-${{ github.run_id }} npm run neonlabs:deploy --network=neonlabs
-          docker cp aave-${{ github.run_id }}:/app/report.json aave-report.json
-          docker rm -f aave-${{ github.run_id }}
+          docker run -i -d --name=aave-${{ github.run_number }} ${{ env.IMAGE }} /bin/bash
+          docker exec -i -e NEON_PROXY_URL=${{env.PROXY_URL}} -e NEON_ACCOUNTS=${{ env.ACCOUNTS }} -e NEON_CHAIN_ID=${{ env.NETWORK_ID }} aave-${{ github.run_number }} npm run neonlabs:deploy --network=neonlabs
+          docker cp aave-${{ github.run_number }}:/app/report.json aave-report.json
+          docker rm -f aave-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v3
         with:
@@ -262,7 +262,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -280,16 +280,16 @@ jobs:
           IMAGE: neonlabsorg/curve_tests:latest
         run: |
           docker pull ${{ env.IMAGE }}
-          docker run -i -d --name curve-${{ github.run_id }} ${{ env.IMAGE }} /bin/bash
+          docker run -i -d --name curve-${{ github.run_number }} ${{ env.IMAGE }} /bin/bash
           test -t 1 && USE_TTY="-t"
-          docker exec -i ${USE_TTY} curve-${{ github.run_id }} \
+          docker exec -i ${USE_TTY} curve-${{ github.run_number }} \
               brownie networks add live neon host="${{ env.PROXY_URL }}" chainid=${{env.NETWORK_ID}}  explorer=https://neonscan.org timeout=60
-          docker exec -i ${USE_TTY} -e ACCOUNTS=${{ env.ACCOUNTS }} curve-${{ github.run_id }} \
+          docker exec -i ${USE_TTY} -e ACCOUNTS=${{ env.ACCOUNTS }} curve-${{ github.run_number }} \
             bash -c " \
               brownie test \
               -vvvv --network neon"
-          docker cp curve-${{ github.run_id }}:/app/curve-report.json curve-report.json
-          docker rm -f curve-${{ github.run_id }}
+          docker cp curve-${{ github.run_number }}:/app/curve-report.json curve-report.json
+          docker rm -f curve-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v3
         with:
@@ -311,7 +311,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -343,7 +343,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -360,16 +360,16 @@ jobs:
           IMAGE: neonlabsorg/compound_tests:latest
         run: |
           docker pull ${{ env.IMAGE }}
-          docker run -i -d --name compound-${{ github.run_id }} ${{ env.IMAGE }} /bin/bash
+          docker run -i -d --name compound-${{ github.run_number }} ${{ env.IMAGE }} /bin/bash
           test -t 1 && USE_TTY="-t"
-          docker exec -i ${USE_TTY} compound-${{ github.run_id }} \
+          docker exec -i ${USE_TTY} compound-${{ github.run_number }} \
               brownie networks add live neon host="${{ env.PROXY_URL }}" chainid=${{env.NETWORK_ID}} timeout=60
-          docker exec -i ${USE_TTY} -e ACCOUNTS=${{ env.ACCOUNTS }} compound-${{ github.run_id }} \
+          docker exec -i ${USE_TTY} -e ACCOUNTS=${{ env.ACCOUNTS }} compound-${{ github.run_number }} \
             bash -c " \
               brownie test \
               -vvvv --network neon"
-          docker cp compound-${{ github.run_id }}:/app/compound-report.json compound-report.json
-          docker rm -f compound-${{ github.run_id }}
+          docker cp compound-${{ github.run_number }}:/app/compound-report.json compound-report.json
+          docker rm -f compound-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v3
         with:
@@ -392,7 +392,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -411,13 +411,13 @@ jobs:
           IMAGE: neonlabsorg/robonomics_tests:latest
         run: |
           docker pull ${{ env.IMAGE }}
-          docker run -i -d --entrypoint "sleep" --name=robonomics-${{ github.run_id }} ${{ env.IMAGE }} infinity
+          docker run -i -d --entrypoint "sleep" --name=robonomics-${{ github.run_number }} ${{ env.IMAGE }} infinity
           env_args="-e NEON_PROXY_URL=${{env.PROXY_URL}} -e NEON_ACCOUNTS=${{ env.ACCOUNTS }} -e NEON_CHAIN_ID=${{ env.NETWORK_ID }}"
           echo "Run Robonomics tests"
-          docker exec -i $env_args robonomics-${{ github.run_id }} ./run_tests.sh
-          docker exec -i $env_args robonomics-${{ github.run_id }} node create_report.js
-          docker exec -i $env_args robonomics-${{ github.run_id }} cat ./reports/report.json > robonomics-report.json
-          docker rm -f robonomics-${{ github.run_id }}
+          docker exec -i $env_args robonomics-${{ github.run_number }} ./run_tests.sh
+          docker exec -i $env_args robonomics-${{ github.run_number }} node create_report.js
+          docker exec -i $env_args robonomics-${{ github.run_number }} cat ./reports/report.json > robonomics-report.json
+          docker rm -f robonomics-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v3
         with:
@@ -439,7 +439,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -457,16 +457,16 @@ jobs:
           IMAGE: neonlabsorg/yearn_tests:latest
         run: |
           docker pull ${{ env.IMAGE }}
-          docker run -i -d --name yearn-${{ github.run_id }} ${{ env.IMAGE }} /bin/bash
-          docker exec -i -e ACCOUNTS=${{ env.ACCOUNTS }} yearn-${{ github.run_id }} \
+          docker run -i -d --name yearn-${{ github.run_number }} ${{ env.IMAGE }} /bin/bash
+          docker exec -i -e ACCOUNTS=${{ env.ACCOUNTS }} yearn-${{ github.run_number }} \
               brownie networks add live neon host="${{ env.PROXY_URL }}" chainid=${{env.NETWORK_ID}} timeout=60
-          docker exec -i -e ACCOUNTS=${{ env.ACCOUNTS }} yearn-${{ github.run_id }} \
+          docker exec -i -e ACCOUNTS=${{ env.ACCOUNTS }} yearn-${{ github.run_number }} \
             bash -c " \
               brownie test \
                 tests/functional -m ci \
               -vvvv --network neon"
-          docker cp yearn-${{ github.run_id }}:/app/report.json yearn-report.json
-          docker rm -f yearn-${{ github.run_id }}
+          docker cp yearn-${{ github.run_number }}:/app/report.json yearn-report.json
+          docker rm -f yearn-${{ github.run_number }}
 
       - name: Save report
         uses: actions/upload-artifact@v3
@@ -490,7 +490,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
@@ -510,13 +510,13 @@ jobs:
         run: |
           test -t 1 && USE_TTY="-t"
           docker pull ${{ env.IMAGE }}
-          docker run -i ${USE_TTY} --name=pancake-${{ github.run_id }} \
+          docker run -i ${USE_TTY} --name=pancake-${{ github.run_number }} \
             -e NEON_PROXY_URL=${{ env.PROXY_URL }} \
             -e NEON_ACCOUNTS=${{ env.ACCOUNTS }} \
             -e NEON_CHAIN_ID=${{ env.NETWORK_ID }} \
             ${{ env.IMAGE }}
-          docker cp pancake-${{ github.run_id }}:/usr/src/app/report.json pancake-report.json
-          docker rm -f pancake-${{ github.run_id }}
+          docker cp pancake-${{ github.run_number }}:/usr/src/app/report.json pancake-report.json
+          docker rm -f pancake-${{ github.run_number }}
 
       - name: Save report
         uses: actions/upload-artifact@v3
@@ -541,7 +541,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: neonlabsorg/neon-tests
-          ref: NDEV-2772
+          ref: develop
       - name: Install python requirements
         id: requirements
         uses: ./.github/actions/python-requirements
