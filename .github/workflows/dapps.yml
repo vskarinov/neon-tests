@@ -1,5 +1,5 @@
-name: dApps testing
-run-name: dApps testing (${{ inputs.dapps || 'all dapps'}}, ${{ inputs.network || 'terraform' }})
+name: dApps tests
+run-name: dApps tests (${{ inputs.dapps || 'all dapps'}}, ${{ inputs.network || 'terraform' }})
 
 on:
   schedule:
@@ -88,8 +88,8 @@ jobs:
         with:
           network: ${{ env.NETWORK }}
           devnet_solana_url: ${{ secrets.SOLANA_URL }}
-          proxy_ip: ${{ steps.prepare_terraform.outputs.proxy_ip || inputs.proxy_ip }}
-          solana_ip: ${{ steps.prepare_terraform.outputs.solana_ip || inputs.solana_ip }}
+          proxy_ip: ${{ steps.prepare_terraform.outputs.proxy_ip }}
+          solana_ip: ${{ steps.prepare_terraform.outputs.solana_ip }}
           proxy_url: ${{ inputs.proxy_url }}
           solana_url: ${{ inputs.solana_url }}
           faucet_url: ${{ inputs.faucet_url }}

@@ -1,5 +1,5 @@
-name: dApps testing
-run-name: dApps testing (${{ inputs.dapps || 'all dapps'}}, ${{ inputs.network }})
+name: dApps reusable
+run-name: dApps reusable (${{ inputs.dapps }}, ${{ inputs.network }})
 
 on:
   workflow_call:
