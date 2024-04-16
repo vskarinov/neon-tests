@@ -364,7 +364,6 @@ class TestTracerDebugMethods:
         for item in response["result"]:
             assert re.match(r"^0x[a-fA-F\d]{64}$", item)
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     def test_debug_get_modified_accounts_by_number(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -388,7 +387,6 @@ class TestTracerDebugMethods:
         )
         self.check_modified_accounts_response(response)
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     def test_debug_get_modified_accounts_by_same_number(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -410,7 +408,6 @@ class TestTracerDebugMethods:
         )
         self.check_modified_accounts_response(response)
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     def test_debug_get_modified_accounts_by_only_one_number(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -430,7 +427,6 @@ class TestTracerDebugMethods:
         )
         self.check_modified_accounts_response(response)
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     @pytest.mark.parametrize("difference", [1, 50, 199, 200])
     def test_debug_get_modified_accounts_by_number_blocks_difference_less_or_equal_200(self, difference):
         sender_account = self.accounts[0]
@@ -452,7 +448,6 @@ class TestTracerDebugMethods:
         )
         self.check_modified_accounts_response(response)
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     def test_debug_get_modified_accounts_by_number_201_blocks_difference(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -468,7 +463,6 @@ class TestTracerDebugMethods:
         assert response["error"]["code"] == -32603, "Invalid error code"
         assert response["error"]["message"] == "Requested range (201) is too big, maximum allowed range is 200 blocks"
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     @pytest.mark.parametrize("params", [[1, 124], ["94f3e", 12], ["1a456", "0x0"], ["183b8e", "183b8e"]])
     def test_debug_get_modified_accounts_by_invalid_numbers(self, params):
         response = self.tracer_api.send_rpc(method="debug_getModifiedAccountsByNumber", params=params)
@@ -476,7 +470,6 @@ class TestTracerDebugMethods:
         assert response["error"]["code"] == -32602, "Invalid error code"
         assert response["error"]["message"] == "Invalid params"
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     def test_debug_get_modified_accounts_by_hash(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -500,7 +493,6 @@ class TestTracerDebugMethods:
         )
         self.check_modified_accounts_response(response)
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     @pytest.mark.parametrize(
         "params", [[1, 124], ["0x94f3e00000000800000000", 12], ["0x1a456", "0x000000000001"], ["0x183b8e", "183b8e"]]
     )
