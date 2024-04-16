@@ -15,9 +15,6 @@ import typing as tp
 from pathlib import Path
 from urllib.parse import urlparse
 
-from utils.helpers import wait_condition
-from utils.apiclient import JsonRPCSession
-
 try:
     import click
 except ImportError:
@@ -39,6 +36,8 @@ try:
     from utils.operator import Operator
     from utils.web3client import NeonChainWeb3Client
     from utils.prices import get_sol_price
+    from utils.helpers import wait_condition
+    from utils.apiclient import JsonRPCSession
 except ImportError:
     print("Please run ./clickfile.py requirements to install all requirements")
 
