@@ -13,5 +13,4 @@ rlp==3.0.0
 python-terraform==0.10.1
 allure-pytest==2.9.45
 uv==0.1.13
-eth-typing==4.2.0
-eth-account==0.12.1
+eth-typing==4.1.0
