@@ -427,8 +427,8 @@ class TestTracerDebugMethods:
         )
         self.check_modified_accounts_response(response)
 
-    @pytest.mark.parametrize("difference", [1, 50, 199, 200])
-    def test_debug_get_modified_accounts_by_number_blocks_difference_less_or_equal_200(self, difference):
+    @pytest.mark.parametrize("difference", [1, 25, 49, 50])
+    def test_debug_get_modified_accounts_by_number_blocks_difference_less_or_equal_50(self, difference):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
         receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
@@ -448,12 +448,12 @@ class TestTracerDebugMethods:
         )
         self.check_modified_accounts_response(response)
 
-    def test_debug_get_modified_accounts_by_number_201_blocks_difference(self):
+    def test_debug_get_modified_accounts_by_number_51_blocks_difference(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
         receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
         assert receipt["status"] == 1
-        start_number = hex(receipt["blockNumber"] - 201)
+        start_number = hex(receipt["blockNumber"] - 51)
         end_number = hex(receipt["blockNumber"])
 
         response = self.tracer_api.send_rpc(
@@ -461,7 +461,7 @@ class TestTracerDebugMethods:
         )
         assert "error" in response, "No errors in response"
         assert response["error"]["code"] == -32603, "Invalid error code"
-        assert response["error"]["message"] == "Requested range (201) is too big, maximum allowed range is 200 blocks"
+        assert response["error"]["message"] == "Requested range (51) is too big, maximum allowed range is 50 blocks"
 
     @pytest.mark.parametrize("params", [[1, 124], ["94f3e", 12], ["1a456", "0x0"], ["183b8e", "183b8e"]])
     def test_debug_get_modified_accounts_by_invalid_numbers(self, params):
