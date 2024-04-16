@@ -109,6 +109,7 @@ jobs:
     needs:
       - prepare
     uses: ./.github/workflows/dapps_reusable.yml
+    secrets: inherit
     with:
       network: terraform
       dapps: ${{ needs.prepare.outputs.dapps }}
@@ -116,7 +117,7 @@ jobs:
       solana_url: ${{ needs.prepare.outputs.solana_url }}
       faucet_url: ${{ needs.prepare.outputs.faucet_url }}
       network_id: ${{ needs.prepare.outputs.network_id }}
-      pr_url_for_report: ${{ github.event.inputs.initial_pr }}
+      pr_url_for_report: ${{ inputs.pr_url_for_report }}
       proxy_ip: ${{ needs.prepare.outputs.proxy_ip }}
       solana_ip: ${{ needs.prepare.outputs.solana_ip }}
       external_call: false
