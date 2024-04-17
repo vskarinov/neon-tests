@@ -133,10 +133,13 @@ def check_profitability(func: tp.Callable) -> tp.Callable:
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> None:
+        network = network_manager.get_network_object(args[0])
+        w3client = web3client.NeonChainWeb3Client(network["proxy_url"])
+
         def get_tokens_balances(operator: Operator) -> tp.Dict:
             """Return tokens balances"""
             return dict(
-                neon=operator.get_token_balance(),
+                neon=w3client.to_main_currency(operator.get_token_balance()),
                 sol=operator.get_solana_balance() / 1_000_000_000,
             )
 
@@ -144,14 +147,13 @@ def check_profitability(func: tp.Callable) -> tp.Callable:
             return dict(map(lambda i: (i[0], str(i[1])), d.items()))
 
         if os.environ.get("OZ_BALANCES_REPORT_FLAG") is not None:
-            network = network_manager.get_network_object(args[0])
             op = Operator(
                 network["proxy_url"],
                 network["solana_url"],
                 network["operator_neon_rewards_address"],
                 network["spl_neon_mint"],
                 network["operator_keys"],
-                web3_client=NeonChainWeb3Client(network["proxy_url"]),
+                web3_client=w3client,
             )
             pre = get_tokens_balances(op)
             try:
@@ -536,7 +538,10 @@ def run(name, jobs, numprocesses, ui_item, amount, users, network):
     if name == "economy":
         command = "py.test integration/tests/economy/test_economics.py"
     elif name == "basic":
-        command = "py.test integration/tests/basic"
+        if network == "mainnet":
+            command = "py.test integration/tests/basic -m mainnet"
+        else:
+            command = "py.test integration/tests/basic"
         if numprocesses:
             command = f"{command} --numprocesses {numprocesses} --dist loadgroup"
     elif name == "tracer":
@@ -836,7 +841,7 @@ def upload_allure_report(name: str, network: str, source: str = "./allure-report
     print(f"Allure report link: {report_url}")
 
     with open("allure_report_info", "w") as f:
-        f.write(f"🔗Allure report: [link]({report_url})\n")
+        f.write(f"🔗 Allure [report]({report_url})\n")
 
 
 @allure_cli.command("generate", help="Generate allure history")
@@ -902,7 +907,8 @@ def infra():
 @click.option("--current_branch", help="Branch of neon-tests repository")
 @click.option("--head_branch", default="", help="Feature branch name")
 @click.option("--base_branch", default="", help="Target branch of the pull request")
-def deploy(current_branch, head_branch, base_branch):
+@click.option("--use-real-price", required=False, default="0", help="Remove CONST_GAS_PRICE from proxy")
+def deploy(current_branch, head_branch, base_branch, use_real_price):
     # use feature branch or version tag as tag for proxy, evm and faucet images or use latest
     proxy_tag, evm_tag, faucet_tag = "", "", ""
 
@@ -928,11 +934,12 @@ def deploy(current_branch, head_branch, base_branch):
     proxy_tag = "latest" if not proxy_tag else proxy_tag
     evm_tag = "latest" if not evm_tag else evm_tag
     faucet_tag = "latest" if not faucet_tag else faucet_tag
+    use_real_price = True if use_real_price == "1" else False
 
     evm_branch = evm_tag if evm_tag != "latest" else "develop"
     proxy_branch = proxy_tag if proxy_tag != "latest" else "develop"
 
-    infrastructure.deploy_infrastructure(evm_tag, proxy_tag, faucet_tag, evm_branch, proxy_branch)
+    infrastructure.deploy_infrastructure(evm_tag, proxy_tag, faucet_tag, evm_branch, proxy_branch, use_real_price)
 
 
 @infra.command(name="destroy", help="Destroy test infrastructure")
