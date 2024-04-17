@@ -33,7 +33,7 @@ Please use clickfile.py to install deps because our web3 has conflicts with sola
 To download test contracts from the Neon EVM repo, you need to use:
 
 ```bash
-./clickfile.py contracts
+./clickfile.py update-contracts
 ```
 
 ## Run OpenZeppelin tests
