@@ -5,7 +5,6 @@ import json
 import time
 from multiprocessing.dummy import Pool
 
-import yaml
 import os
 import re
 import shutil
@@ -17,14 +16,14 @@ from urllib.parse import urlparse
 
 try:
     import click
+    import requests
+    import tabulate
+    import yaml
 except ImportError:
-    print("Please install click library: pip install click==8.0.3")
+    print("Please install dependencies: pip3 install -r deploy/requirements/click.txt")
     sys.exit(1)
 
 try:
-    import requests
-    import tabulate
-
     from deploy.cli.github_api_client import GithubClient
     from deploy.cli.network_manager import NetworkManager
     from deploy.cli import dapps as dapps_cli
