@@ -16,8 +16,8 @@ from web3.auto import w3
 
 
 def get_contract_bin(
-    contract: str,
-    contract_name: tp.Optional[str] = None,
+        contract: str,
+        contract_name: tp.Optional[str] = None,
 ):
     version = "0.7.6"
     if not contract.endswith(".sol"):
@@ -30,9 +30,9 @@ def get_contract_bin(
 
     solcx.install_solc(version)
 
-    contract_path = (pathlib.Path.cwd() / "contracts" / "neon_evm" / f"{contract}").absolute()
+    contract_path = (pathlib.Path.cwd() / "contracts" / "neon_evm" / contract).absolute()
     if not contract_path.exists():
-        contract_path = (pathlib.Path.cwd() / "contracts" / "external" / f"{contract}").absolute()
+        contract_path = (pathlib.Path.cwd() / "contracts" / f"{contract}").absolute()
 
     assert contract_path.exists(), f"Can't found contract: {contract_path}"
 
@@ -57,6 +57,7 @@ def make_deployment_transaction(
     contract_file_name: tp.Union[pathlib.Path, str],
     contract_name: tp.Optional[str] = None,
     encoded_args=None,
+    value: int = 0,
     gas: int = 999999999,
     chain_id=111,
     access_list=None,
@@ -72,6 +73,8 @@ def make_deployment_transaction(
     if access_list:
         tx["accessList"] = access_list
         tx["type"] = 1
+    if value:
+        tx["value"] = value
 
     return w3.eth.account.sign_transaction(tx, user.solana_account.secret_key[:32])
 
@@ -86,9 +89,10 @@ def make_contract_call_trx(
         types = function_signature.split("(")[1].split(")")[0].split(",")
         data += eth_abi.encode(types, params)
 
-    signed_tx = make_eth_transaction(
-        contract.eth_address, data, user, value=value, chain_id=chain_id, access_list=access_list, type=trx_type
-    )
+
+    signed_tx = make_eth_transaction(contract.eth_address, data, user, value=value,
+                                     chain_id=chain_id, access_list=access_list, type=trx_type)
+
     return signed_tx
 
 
@@ -99,13 +103,14 @@ def deploy_contract(
     evm_loader: EvmLoader,
     treasury_pool: TreasuryPool,
     step_count: int = 1000,
+    value: int = 0,
     encoded_args=None,
     contract_name: tp.Optional[str] = None,
 ):
     print("Deploying contract")
     contract: Contract = create_contract_address(user, evm_loader)
     holder_acc = create_holder(operator)
-    signed_tx = make_deployment_transaction(user, contract_file_name, contract_name, encoded_args=encoded_args)
+    signed_tx = make_deployment_transaction(user, contract_file_name, contract_name, encoded_args=encoded_args, value=value)
     write_transaction_to_holder_account(signed_tx, holder_acc, operator)
 
     index = 0
