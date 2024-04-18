@@ -15,7 +15,7 @@ on:
           - night-stand
 
 env:
-  NETWORK: ${{ github.event.inputs.network || 'night-stand' }}
+  NETWORK: ${{ github.event.inputs.network || 'terraform' }}
   BUILD_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   IMAGE:  neonlabsorg/neon_tests
   CONTAINER:  "economy-${{ github.run_id }}"
@@ -36,11 +36,6 @@ jobs:
     runs-on: ubuntu-20.04
     if: always()
     steps:
-      - name: Setup `terraform` by cron schedule
-        id: setup_network
-        if: github.event.schedule=='0 6 * * *'
-        run: |
-          echo "NETWORK=terraform" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - name: "Prepare terraform stand"
         id: prepare_terraform
