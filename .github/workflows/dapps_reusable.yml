@@ -154,7 +154,7 @@ jobs:
           path: uniswap-v3-report.json
 
   saddle:
-    runs-on: neon-hosted
+    runs-on: ubuntu-22.04
     if: contains( inputs.dapps, 'saddle')
     env:
       SOLANA_URL: ${{ inputs.solana_url }}
@@ -387,7 +387,7 @@ jobs:
           path: compound-report.json
 
   robonomics:
-    runs-on: neon-hosted
+    runs-on: ubuntu-22.04
     if: contains( inputs.dapps, 'robonomics')
     env:
       SOLANA_URL: ${{ inputs.solana_url }}
@@ -437,7 +437,7 @@ jobs:
           path: robonomics-report.json
   yearn:
     if: contains( inputs.dapps, 'yearn')
-    runs-on: neon-hosted
+    runs-on: ubuntu-22.04
     env:
       SOLANA_URL: ${{ inputs.solana_url }}
       PROXY_URL: ${{ inputs.proxy_url }}
