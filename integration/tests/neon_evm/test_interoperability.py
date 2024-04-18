@@ -321,7 +321,6 @@ class TestInteroperability:
         with pytest.raises(RPCException, match="Cross-program invocation with unauthorized signer or writable account"):
             solana_caller.execute(TOKEN_PROGRAM_ID, instruction, sender=from_wallet)
 
-    @pytest.mark.skip(reason="NDEV-2837")
     def test_staticcall_does_not_support_external_call(
         self, sender_with_tokens, solana_caller, operator_keypair, evm_loader, treasury_pool
     ):
@@ -332,6 +331,7 @@ class TestInteroperability:
             evm_loader,
             treasury_pool,
             contract_name="CommonCaller",
+            version="0.8.3",
         )
 
         resource_addr = solana_caller.create_resource(sender_with_tokens, b"123", 8, 1000000000, COUNTER_ID)
@@ -381,7 +381,6 @@ class TestInteroperability:
         else:
             assert False, f"Expected error but got {resp}"
 
-    @pytest.mark.skip(reason="NDEV-2837")
     def test_call_neon_instruction_by_neon_instruction(
         self,
         sender_with_tokens,
