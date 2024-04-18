@@ -5,6 +5,7 @@ Created on 2022-06-16
 """
 
 import os
+from time import sleep
 from typing import Optional
 
 import allure
@@ -13,8 +14,9 @@ from playwright.sync_api import expect
 
 from ui import components, libs
 from ui.pages import phantom, metamask
+from utils.consts import Time
 from . import BasePage
-from ..libs import Platform, Token, Tokens
+from ..libs import Platform, Token, Tokens, PriorityFee, Fee
 
 
 class NeonPassPage(BasePage):
@@ -98,7 +100,12 @@ class NeonPassPage(BasePage):
                 components.Button(
                     self.page, selector="//app-wallet-button[@label='From']//*[text()='Connect Wallet']"
                 ).click()
-                components.Button(self.page, selector="//app-wallets-dialog//*[text()='Phantom']/parent::*").click()
+                app_wallets_dialog = "//app-wallets-dialog"
+                self.page.wait_for_selector(
+                    selector=app_wallets_dialog + "//*[text()='Select Wallet']", timeout=timeout
+                )
+                sleep(10)  # wait for the phantom button be loaded properly
+                components.Button(self.page, selector=app_wallets_dialog + "//*[text()='Phantom']/parent::*").click()
             self._handle_phantom_unlock(phantom_page_info.value)
             self.page.wait_for_selector(
                 selector="//app-wallet-button[@label='From']//*[contains(text(),'B4t7')]", timeout=timeout
@@ -139,24 +146,44 @@ class NeonPassPage(BasePage):
         self.page.wait_for_selector(selector="//label[contains(text(), 'balance')]")
         components.Input(self.page, selector="//input[contains(@class, 'token-amount-input')]").fill(str(amount))
 
-    @allure.step("Set transaction fee type {fee_type}")
-    def set_transaction_fee(self, fee_type: Optional[str]) -> None:
+    @allure.step("Set transaction fee {fee}")
+    def set_transaction_fee(self, fee: Optional[Fee]) -> None:
         """Set transaction fee type"""
-        if fee_type is None:
+        if fee is None:
             return
 
-        fee_selector = "//app-header//app-token-select/button"
-        fee_selector_options = (
-            f"//app-header//app-token-select/div[contains(@class, 'token-dropdown')]/*[text()='{fee_type}']"
-        )
+        fee_parent = "//app-neon-transaction-fee"
+        fee_header = fee_parent + "//*[@class='header']"
 
-        if self.page.query_selector(fee_selector).text_content() == fee_type:
+        if fee.token_name in self.page.query_selector(fee_header).text_content():
             return
 
-        components.Button(self.page, selector=fee_selector).click()
-        components.Button(self.page, selector=fee_selector_options).click()
+        components.Button(self.page, selector=fee_parent).click()
+        components.Button(self.page, selector=fee_parent + f"//button/*[text()='{fee.network_name}']").click()
 
-        assert self.page.query_selector(fee_selector).text_content() == fee_type
+        assert fee.token_name in self.page.query_selector(fee_header).text_content()
+
+    @allure.step("Set priority fee to {priority_fee}")
+    def set_priority_fee(self, priority_fee: Optional[str]) -> None:
+        """Set priority fee"""
+        if priority_fee is None:
+            return
+        priority_fee_parent = "//app-solana-priority-fee"
+        priority_fee_header = priority_fee_parent + "//*[@class='header']"
+
+        if priority_fee in self.page.query_selector(priority_fee_header).text_content():
+            return
+
+        components.Button(self.page, selector=priority_fee_parent).click()
+        components.Button(self.page, selector=priority_fee_parent + f"//button/*[text()='{priority_fee}']").click()
+
+        if priority_fee == PriorityFee.custom:
+            priority_fee_popup = "//app-priority-fee-dialog"
+            # Set custom fee
+            components.Input(self.page, selector=priority_fee_popup + "//input").fill("0.001")
+            components.Button(self.page, selector=priority_fee_popup + "//button[@class='save']").click()
+
+        assert priority_fee in self.page.wait_for_selector(priority_fee_header).text_content()
 
     def next_tab(self) -> None:
         """Got to next tab"""

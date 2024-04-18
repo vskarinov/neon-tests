@@ -32,9 +32,27 @@ class Platform:
 
 
 @dataclass
+class Fee:
+    network_name: str
+    token_name: str
+
+    def __str__(self):
+        return self.network_name
+
+
+@dataclass
 class FeeType:
-    neon: str = "NEON"
-    sol: str = "SOL"
+    neon: Fee = Fee("Neon", "NEON")
+    sol: Fee = Fee("Solana", "SOL")
+    none: Fee = None
+
+
+@dataclass
+class PriorityFee:
+    fast: str = "Fast"
+    turbo: str = "Turbo"
+    ultra: str = "Ultra"
+    custom: str = "Custom"
     none: str = None
 
 
