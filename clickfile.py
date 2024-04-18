@@ -5,7 +5,6 @@ import json
 import time
 from multiprocessing.dummy import Pool
 
-import yaml
 import os
 import re
 import shutil
@@ -17,14 +16,14 @@ from urllib.parse import urlparse
 
 try:
     import click
+    import requests
+    import tabulate
+    import yaml
 except ImportError:
-    print("Please install click library: pip install click==8.0.3")
+    print("Please install dependencies: pip3 install -r deploy/requirements/click.txt")
     sys.exit(1)
 
 try:
-    import requests
-    import tabulate
-
     from deploy.cli.github_api_client import GithubClient
     from deploy.cli.network_manager import NetworkManager
     from deploy.cli import dapps as dapps_cli
@@ -36,6 +35,8 @@ try:
     from utils.operator import Operator
     from utils.web3client import NeonChainWeb3Client
     from utils.prices import get_sol_price
+    from utils.helpers import wait_condition
+    from utils.apiclient import JsonRPCSession
 except ImportError:
     print("Please run ./clickfile.py requirements to install all requirements")
 
@@ -343,6 +344,19 @@ def print_oz_balances():
     print(green("\nOZ tests suite profitability:"))
     print(yellow(report))
 
+def wait_for_tracer_service(network: str):
+    settings = network_manager.get_network_object(network)
+    web3_client = web3client.NeonChainWeb3Client(proxy_url=settings["proxy_url"])
+    tracer_api = JsonRPCSession(settings["tracer_url"])
+
+    block = web3_client.get_block_number()
+    
+    wait_condition(
+    lambda: (tracer_api.send_rpc(method="get_neon_revision", params=block)["result"]["neon_revision"]) is not None,
+    timeout_sec=180,
+    )
+
+    return True
 
 def generate_allure_environment(network_name: str):
     network = network_manager.get_network_object(network_name)
@@ -556,6 +570,9 @@ def run(name, jobs, numprocesses, ui_item, amount, users, network):
             command = command + f"/test_{ui_item}.py"
     else:
         raise click.ClickException("Unknown test name")
+
+    if name == "tracer":
+        assert wait_for_tracer_service(network)
 
     command += f" -s --network={network} --make-report"
     cmd = subprocess.run(command, shell=True)

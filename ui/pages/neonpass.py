@@ -16,7 +16,7 @@ from ui import components, libs
 from ui.pages import phantom, metamask
 from utils.consts import Time
 from . import BasePage
-from ..libs import Platform, Token, Tokens, PriorityFee, Fee
+from ..libs import Platform, Token, Tokens, PriorityFee, TransactionFee
 
 
 class NeonPassPage(BasePage):
@@ -104,7 +104,6 @@ class NeonPassPage(BasePage):
                 self.page.wait_for_selector(
                     selector=app_wallets_dialog + "//*[text()='Select Wallet']", timeout=timeout
                 )
-                sleep(10)  # wait for the phantom button be loaded properly
                 components.Button(self.page, selector=app_wallets_dialog + "//*[text()='Phantom']/parent::*").click()
             self._handle_phantom_unlock(phantom_page_info.value)
             self.page.wait_for_selector(
@@ -147,21 +146,23 @@ class NeonPassPage(BasePage):
         components.Input(self.page, selector="//input[contains(@class, 'token-amount-input')]").fill(str(amount))
 
     @allure.step("Set transaction fee {fee}")
-    def set_transaction_fee(self, fee: Optional[Fee]) -> None:
+    def set_transaction_fee(self, transaction_fee: Optional[TransactionFee]) -> None:
         """Set transaction fee type"""
-        if fee is None:
+        if transaction_fee is None:
             return
 
         fee_parent = "//app-neon-transaction-fee"
         fee_header = fee_parent + "//*[@class='header']"
 
-        if fee.token_name in self.page.query_selector(fee_header).text_content():
+        if transaction_fee.token_name in self.page.query_selector(fee_header).text_content():
             return
 
         components.Button(self.page, selector=fee_parent).click()
-        components.Button(self.page, selector=fee_parent + f"//button/*[text()='{fee.network_name}']").click()
+        components.Button(
+            self.page, selector=fee_parent + f"//button/*[text()='{transaction_fee.network_name}']"
+        ).click()
 
-        assert fee.token_name in self.page.query_selector(fee_header).text_content()
+        assert transaction_fee.token_name in self.page.query_selector(fee_header).text_content()
 
     @allure.step("Set priority fee to {priority_fee}")
     def set_priority_fee(self, priority_fee: Optional[str]) -> None:

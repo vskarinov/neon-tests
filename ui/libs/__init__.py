@@ -32,7 +32,7 @@ class Platform:
 
 
 @dataclass
-class Fee:
+class TransactionFee:
     network_name: str
     token_name: str
 
@@ -41,10 +41,10 @@ class Fee:
 
 
 @dataclass
-class FeeType:
-    neon: Fee = Fee("Neon", "NEON")
-    sol: Fee = Fee("Solana", "SOL")
-    none: Fee = None
+class TransactionFeeType:
+    neon: TransactionFee = TransactionFee("Neon", "NEON")
+    sol: TransactionFee = TransactionFee("Solana", "SOL")
+    none: TransactionFee = None
 
 
 @dataclass
