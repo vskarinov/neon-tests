@@ -448,3 +448,50 @@ class TestAccountRevision:
             send_transaction_step_from_account(
                 operator_keypair, evm_loader, treasury_pool, new_holder_acc, accounts, EVM_STEPS, operator_keypair
             )
+
+    @pytest.mark.skip(reason="Isn't implemented yet")
+    def test_parallel_change_balance_in_one_trx_and_check_in_second_trx(
+        self, operator_keypair, treasury_pool, neon_api_client, sender_with_tokens, evm_loader, holder_acc
+    ):
+        contract = deploy_contract(
+            operator_keypair, sender_with_tokens, "transfers", evm_loader, treasury_pool, value=1000
+        )
+        sender_balance_before = evm_loader.get_neon_balance(sender_with_tokens.eth_address)
+
+        signed_tx1 = make_contract_call_trx(sender_with_tokens, contract, "donateTenPercent()")
+        accounts = [
+            sender_with_tokens.balance_account_address,
+            sender_with_tokens.solana_account_address,
+            contract.balance_account_address,
+            contract.solana_address,
+        ]
+
+        write_transaction_to_holder_account(signed_tx1, holder_acc, operator_keypair)
+        send_transaction_step_from_account(
+            operator_keypair, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
+        )
+        send_transaction_step_from_account(
+            operator_keypair, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
+        )
+
+        signed_tx2 = make_contract_call_trx(sender_with_tokens, contract, "donateTenPercent()")
+
+        resp = execute_trx_from_instruction(
+            operator_keypair,
+            evm_loader,
+            treasury_pool.account,
+            treasury_pool.buffer,
+            signed_tx2,
+            accounts,
+            operator_keypair,
+        )
+        check_transaction_logs_have_text(resp.value, "exit_status=0x11")
+
+        resp = send_transaction_step_from_account(
+            operator_keypair, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
+        )
+        check_transaction_logs_have_text(resp.value.transaction.transaction.signatures[0], "exit_status=0x11")
+        check_holder_account_tag(holder_acc, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
+
+        assert evm_loader.get_neon_balance(contract.eth_address) == 900
+        assert evm_loader.get_neon_balance(sender_with_tokens.eth_address) == sender_balance_before + 100
