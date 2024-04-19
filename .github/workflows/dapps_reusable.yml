@@ -93,8 +93,9 @@ jobs:
             --entrypoint /bin/bash ${{ env.IMAGE }} \
             -c "npx hardhat run /usr/src/app/scripts/deploy.ts"
           docker cp uniswap-v2-${{ github.run_number }}:/usr/src/app/report.json uniswap-v2-report.json
-          docker rm -f uniswap-v2-${{ github.run_number }}
-
+      - name: Delete the uniswap container
+        if: always() && steps.uniswap-v2.result != 'skipped'
+        run: docker rm -f uniswap-v2-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:
@@ -143,8 +144,9 @@ jobs:
             -e NEON_CHAIN_ID=${{ env.NETWORK_ID }} \
             ${{ env.IMAGE }}
           docker cp uniswap-v3-${{ github.run_number }}:/usr/src/app/report.json uniswap-v3-report.json
-          docker rm -f uniswap-v3-${{ github.run_number }}
-
+      - name: Delete the uniswap-v3 container
+        if: always() && steps.uniswap-v3.result != 'skipped'
+        run: docker rm -f uniswap-v3-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:
@@ -152,7 +154,7 @@ jobs:
           path: uniswap-v3-report.json
 
   saddle:
-    runs-on: neon-hosted
+    runs-on: ubuntu-22.04
     if: contains( inputs.dapps, 'saddle')
     env:
       SOLANA_URL: ${{ inputs.solana_url }}
@@ -195,8 +197,9 @@ jobs:
           echo "Run Saddle MetaPool tests"
           docker exec -i $env_args saddle-${{ github.run_number }} npx hardhat run /usr/src/app/scripts/deployMetaPool.ts
           docker cp saddle-${{ github.run_number }}:/usr/src/app/report.json saddle-report.json
-          docker rm -f saddle-${{ github.run_number }}
-
+      - name: Delete the saddle container
+        if: always() && steps.saddle.result != 'skipped'
+        run: docker rm -f saddle-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:
@@ -240,7 +243,9 @@ jobs:
           docker run -i -d --name=aave-${{ github.run_number }} ${{ env.IMAGE }} /bin/bash
           docker exec -i -e NEON_PROXY_URL=${{env.PROXY_URL}} -e NEON_ACCOUNTS=${{ env.ACCOUNTS }} -e NEON_CHAIN_ID=${{ env.NETWORK_ID }} aave-${{ github.run_number }} npm run neonlabs:deploy --network=neonlabs
           docker cp aave-${{ github.run_number }}:/app/report.json aave-report.json
-          docker rm -f aave-${{ github.run_number }}
+      - name: Delete the aave container
+        if: always() && steps.aave.result != 'skipped'
+        run: docker rm -f aave-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:
@@ -289,7 +294,9 @@ jobs:
               brownie test \
               -vvvv --network neon"
           docker cp curve-${{ github.run_number }}:/app/curve-report.json curve-report.json
-          docker rm -f curve-${{ github.run_number }}
+      - name: Delete the curve container
+        if: always() && steps.curve.result != 'skipped'
+        run: docker rm -f curve-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:
@@ -354,6 +361,7 @@ jobs:
           python3 ./clickfile.py infra gen-accounts -c 2 -a 10000 -n ${{env.NETWORK}}
 
       - name: Launch compound tests
+        id: compound
         timeout-minutes: 30
         env:
           ACCOUNTS: ${{ env.ACCOUNTS }}
@@ -369,7 +377,9 @@ jobs:
               brownie test \
               -vvvv --network neon"
           docker cp compound-${{ github.run_number }}:/app/compound-report.json compound-report.json
-          docker rm -f compound-${{ github.run_number }}
+      - name: Delete the compound container
+        if: always() && steps.compound.result != 'skipped'
+        run: docker rm -f compound-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:
@@ -377,7 +387,7 @@ jobs:
           path: compound-report.json
 
   robonomics:
-    runs-on: neon-hosted
+    runs-on: ubuntu-22.04
     if: contains( inputs.dapps, 'robonomics')
     env:
       SOLANA_URL: ${{ inputs.solana_url }}
@@ -417,7 +427,9 @@ jobs:
           docker exec -i $env_args robonomics-${{ github.run_number }} ./run_tests.sh
           docker exec -i $env_args robonomics-${{ github.run_number }} node create_report.js
           docker exec -i $env_args robonomics-${{ github.run_number }} cat ./reports/report.json > robonomics-report.json
-          docker rm -f robonomics-${{ github.run_number }}
+      - name: Delete the robonomics container
+        if: always() && steps.robonomics.result != 'skipped'
+        run: docker rm -f robonomics-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:
@@ -425,7 +437,7 @@ jobs:
           path: robonomics-report.json
   yearn:
     if: contains( inputs.dapps, 'yearn')
-    runs-on: neon-hosted
+    runs-on: ubuntu-22.04
     env:
       SOLANA_URL: ${{ inputs.solana_url }}
       PROXY_URL: ${{ inputs.proxy_url }}
@@ -466,8 +478,9 @@ jobs:
                 tests/functional -m ci \
               -vvvv --network neon"
           docker cp yearn-${{ github.run_number }}:/app/report.json yearn-report.json
-          docker rm -f yearn-${{ github.run_number }}
-
+      - name: Delete the yearn container
+        if: always() && steps.yearn.result != 'skipped'
+        run: docker rm -f yearn-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:
@@ -516,8 +529,9 @@ jobs:
             -e NEON_CHAIN_ID=${{ env.NETWORK_ID }} \
             ${{ env.IMAGE }}
           docker cp pancake-${{ github.run_number }}:/usr/src/app/report.json pancake-report.json
-          docker rm -f pancake-${{ github.run_number }}
-
+      - name: Delete the pancake container
+        if: always() && steps.pancake.result != 'skipped'
+        run: docker rm -f pancake-${{ github.run_number }}
       - name: Save report
         uses: actions/upload-artifact@v4
         with:

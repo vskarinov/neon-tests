@@ -1,11 +1,11 @@
 # How to use
 
-At first, you need to set up a Python 3 virtualenv, and also need to have npm installed and be able to install packages globally on it. You’ll also need to install solc.
+At first, you need to set up a Python 3 virtualenv, and also need to have npm installed and be able to install packages globally on it.
 
-Then you need to install a main dependency for the CLI utility:
+Then you need to install dependencies for the CLI utility:
 
 ```bash
-pip3 install click==8.0.3
+pip3 install -r deploy/requirements/click.txt
 ```
 
 After this, you can use from the project root directory:
@@ -33,7 +33,7 @@ Please use clickfile.py to install deps because our web3 has conflicts with sola
 To download test contracts from the Neon EVM repo, you need to use:
 
 ```bash
-./clickfile.py contracts
+./clickfile.py update-contracts
 ```
 
 ## Run OpenZeppelin tests
