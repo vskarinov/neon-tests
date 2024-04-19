@@ -253,7 +253,7 @@ jobs:
           path: aave-report.json
   curve:
     runs-on: ubuntu-20.04
-    if: contains( inputs.dapps, 'curve')
+    if: contains( inputs.dapps, 'curve-dapp')
     env:
       SOLANA_URL: ${{ inputs.solana_url }}
       PROXY_URL: ${{ inputs.proxy_url }}
