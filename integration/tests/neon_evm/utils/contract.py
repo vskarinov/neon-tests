@@ -18,8 +18,8 @@ from web3.auto import w3
 def get_contract_bin(
         contract: str,
         contract_name: tp.Optional[str] = None,
+        version: str = "0.7.6",
 ):
-    version = "0.7.6"
     if not contract.endswith(".sol"):
         contract += ".sol"
     if contract_name is None:
@@ -61,8 +61,10 @@ def make_deployment_transaction(
     gas: int = 999999999,
     chain_id=111,
     access_list=None,
+    version: str = "0.7.6",
+
 ) -> SignedTransaction:
-    data = get_contract_bin(contract_file_name, contract_name)
+    data = get_contract_bin(contract_file_name, contract_name, version)
     if encoded_args is not None:
         data = data + encoded_args.hex()
 
@@ -106,11 +108,12 @@ def deploy_contract(
     value: int = 0,
     encoded_args=None,
     contract_name: tp.Optional[str] = None,
+    version: str = "0.7.6",
 ):
     print("Deploying contract")
     contract: Contract = create_contract_address(user, evm_loader)
     holder_acc = create_holder(operator)
-    signed_tx = make_deployment_transaction(user, contract_file_name, contract_name, encoded_args=encoded_args, value=value)
+    signed_tx = make_deployment_transaction(user, contract_file_name, contract_name, encoded_args=encoded_args, value=value, version=version)
     write_transaction_to_holder_account(signed_tx, holder_acc, operator)
 
     index = 0
