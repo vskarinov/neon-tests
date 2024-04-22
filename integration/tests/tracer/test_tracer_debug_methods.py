@@ -355,37 +355,16 @@ class TestTracerDebugMethods:
         assert response["error"]["code"] == -32602, "Invalid error code"
         assert response["error"]["message"] == "Invalid params"
 
-    def check_modified_accounts_response(self, response):
-        sender_account = self.accounts[0]
+    def check_modified_accounts_response(self, response, expected_accounts=[]):
         assert "error" not in response, "Error in response"
         assert "result" in response and response["result"] is not None and response["result"] != []
         assert isinstance(response["result"], list)
-        assert sender_account in response["result"]
+
+        for account in expected_accounts:
+            assert account.lower() in response["result"]
+
         for item in response["result"]:
-            assert re.match(r"^0x[a-fA-F\d]{64}$", item)
-
-    def test_debug_get_modified_accounts_by_number(self):
-        sender_account = self.accounts[0]
-        recipient_account = self.accounts[1]
-        receipt_start = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
-        receipt_end = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
-        assert receipt_start["status"] == 1
-        assert receipt_end["status"] == 1
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_getModifiedAccountsByNumber",
-                params=[hex(receipt_start["blockNumber"]), hex(receipt_end["blockNumber"])],
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_getModifiedAccountsByNumber",
-            params=[hex(receipt_start["blockNumber"]), hex(receipt_end["blockNumber"])],
-        )
-        self.check_modified_accounts_response(response)
+            assert re.match(r"\b0x[a-f0-9]{40}\b", item)
 
     def test_debug_get_modified_accounts_by_same_number(self):
         sender_account = self.accounts[0]
@@ -406,7 +385,7 @@ class TestTracerDebugMethods:
             method="debug_getModifiedAccountsByNumber",
             params=[hex(receipt["blockNumber"]), hex(receipt["blockNumber"])],
         )
-        self.check_modified_accounts_response(response)
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
 
     def test_debug_get_modified_accounts_by_only_one_number(self):
         sender_account = self.accounts[0]
@@ -425,7 +404,7 @@ class TestTracerDebugMethods:
         response = self.tracer_api.send_rpc(
             method="debug_getModifiedAccountsByNumber", params=[hex(receipt["blockNumber"])]
         )
-        self.check_modified_accounts_response(response)
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
 
     @pytest.mark.parametrize("difference", [1, 25, 49, 50])
     def test_debug_get_modified_accounts_by_number_blocks_difference_less_or_equal_50(self, difference):
@@ -446,7 +425,7 @@ class TestTracerDebugMethods:
         response = self.tracer_api.send_rpc(
             method="debug_getModifiedAccountsByNumber", params=[start_number, end_number]
         )
-        self.check_modified_accounts_response(response)
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
 
     def test_debug_get_modified_accounts_by_number_51_blocks_difference(self):
         sender_account = self.accounts[0]
@@ -470,6 +449,27 @@ class TestTracerDebugMethods:
         assert response["error"]["code"] == -32602, "Invalid error code"
         assert response["error"]["message"] == "Invalid params"
 
+    def test_debug_get_modified_accounts_by_same_hash(self):
+        sender_account = self.accounts[0]
+        recipient_account = self.accounts[1]
+        receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
+        assert receipt["status"] == 1
+
+        wait_condition(
+            lambda: self.tracer_api.send_rpc(
+                method="debug_getModifiedAccountsByHash",
+                params=[receipt["blockHash"].hex(), receipt["blockHash"].hex()],
+            )["result"]
+            is not None,
+            timeout_sec=120,
+        )
+
+        response = self.tracer_api.send_rpc(
+            method="debug_getModifiedAccountsByHash",
+            params=[receipt["blockHash"].hex(), receipt["blockHash"].hex()],
+        )
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
+
     def test_debug_get_modified_accounts_by_hash(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -491,7 +491,24 @@ class TestTracerDebugMethods:
             method="debug_getModifiedAccountsByHash",
             params=[receipt_start["blockHash"].hex(), receipt_end["blockHash"].hex()],
         )
-        self.check_modified_accounts_response(response)
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
+
+    def test_debug_get_modified_accounts_by_hash_contract_deployment(self, storage_contract_with_deploy_tx):
+        contract = storage_contract_with_deploy_tx[0]
+        receipt = storage_contract_with_deploy_tx[1]
+
+        wait_condition(
+            lambda: self.tracer_api.send_rpc(
+                method="debug_getModifiedAccountsByHash", params=[receipt["blockHash"].hex()]
+            )["result"]
+            is not None,
+            timeout_sec=120,
+        )
+
+        response = self.tracer_api.send_rpc(
+            method="debug_getModifiedAccountsByHash", params=[receipt["blockHash"].hex()]
+        )
+        self.check_modified_accounts_response(response, [contract.address, receipt["from"]])
 
     @pytest.mark.parametrize(
         "params", [[1, 124], ["0x94f3e00000000800000000", 12], ["0x1a456", "0x000000000001"], ["0x183b8e", "183b8e"]]
