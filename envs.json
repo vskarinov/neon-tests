@@ -123,7 +123,7 @@
       "neon": 245022926
     },
     "solana_url": "https://api.devnet.solana.com",
-    "faucet_url": "http://3.13.67.238/request_neon",
+    "faucet_url": "secret_faucet_url",
     "neonpass_url": "http://devnet.neonpass.live",
     "tracer_url": "https://ch2-graph.neontest.xyz/neon-rpc",
     "ws_subscriber_url": "wss://ws.devnet.neonevm.org/websocket/",

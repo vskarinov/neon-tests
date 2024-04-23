@@ -48,6 +48,8 @@ on:
 env:
   NETWORK: ${{ inputs.network }}
   DUMP_ENVS: True
+  DEVNET_FAUCET_URL: ${{ secrets.DEVNET_FAUCET_URL }}
+  DEVNET_SOLANA_URL: ${{ secrets.SOLANA_URL }}
 
 jobs:
   uniswap-v2:
