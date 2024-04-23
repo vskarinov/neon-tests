@@ -112,7 +112,7 @@ jobs:
     uses: ./.github/workflows/dapps_reusable.yml
     secrets: inherit
     with:
-      network: terraform
+      network: ${{ env.NETWORK }}
       dapps: ${{ needs.prepare.outputs.dapps }}
       proxy_url: ${{ needs.prepare.outputs.proxy_url }}
       solana_url: ${{ needs.prepare.outputs.solana_url }}
