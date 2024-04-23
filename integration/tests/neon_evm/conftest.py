@@ -10,7 +10,6 @@ from solana.publickey import PublicKey
 from solana.rpc.commitment import Confirmed
 
 from utils.evm_loader import EvmLoader
-from utils.solana_client import SolanaClient
 from utils.types import Contract, Caller, TreasuryPool
 from .utils.constants import NEON_CORE_API_URL, NEON_CORE_API_RPC_URL, SOLANA_URL, EVM_LOADER
 from .utils.contract import deploy_contract
@@ -23,13 +22,9 @@ KEY_PATH = pathlib.Path(__file__).parent / "operator-keypairs"
 
 @pytest.fixture(scope="session")
 def evm_loader() -> EvmLoader:
-   # solana_client = SolanaClient(SOLANA_URL)
     loader = EvmLoader(EVM_LOADER, SOLANA_URL)
     return loader
 
-# @pytest.fixture(scope="session")
-# def solana_client():
-#     return SolanaClient(SOLANA_URL)
 
 def prepare_operator(key_file, evm_loader):
     with open(key_file, "r") as key:

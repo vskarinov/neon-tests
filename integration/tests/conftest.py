@@ -257,7 +257,7 @@ def class_account_sol_chain(
     evm_loader.request_airdrop(solana_account.public_key, 1 * LAMPORT_PER_SOL)
     evm_loader.deposit_wrapped_sol_from_solana_to_neon(
         solana_account,
-        account, #
+        account,
         web3_client_sol.eth.chain_id,
         1 * LAMPORT_PER_SOL,
     )

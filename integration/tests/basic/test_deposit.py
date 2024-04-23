@@ -9,10 +9,7 @@ from solana.transaction import Transaction
 from solana.publickey import PublicKey
 from spl.token.client import Token as SplToken
 from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import (
-    create_associated_token_account,
-    get_associated_token_address
-)
+from spl.token.instructions import create_associated_token_account, get_associated_token_address
 from web3 import exceptions as web3_exceptions
 
 from utils.consts import LAMPORT_PER_SOL, wSOL, MULTITOKEN_MINTS
@@ -21,9 +18,6 @@ from utils.helpers import wait_condition
 from utils.web3client import NeonChainWeb3Client
 from utils.accounts import EthAccounts
 from utils.solana_client import SolanaClient
-
-
-
 
 
 @allure.feature("Transfer NEON <-> Solana")
@@ -66,13 +60,7 @@ class TestDeposit:
 
     @pytest.mark.multipletokens
     def test_create_and_transfer_new_token_from_solana_to_neon(
-        self,
-        solana_account,
-        pytestconfig: Config,
-        neon_mint,
-        web3_client_usdt,
-        operator_keypair,
-        evm_loader
+        self, solana_account, pytestconfig: Config, neon_mint, web3_client_usdt, operator_keypair, evm_loader
     ):
         amount = 5000
         new_sol_account = Keypair.generate()
@@ -80,21 +68,15 @@ class TestDeposit:
         evm_loader.request_airdrop(new_sol_account.public_key, 1 * LAMPORT_PER_SOL)
         new_account = self.accounts.create_account()
 
-        evm_loader.deposit_neon_like_tokens_from_solana_to_neon(token_mint,
-                                                                     new_sol_account,
-                                                                     new_account,
-                                                                     web3_client_usdt.chain_id,
-                                                                     operator_keypair,
-                                                                     amount)
+        evm_loader.deposit_neon_like_tokens_from_solana_to_neon(
+            token_mint, new_sol_account, new_account, web3_client_usdt.chain_id, operator_keypair, amount
+        )
 
         usdt_balance_after = web3_client_usdt.get_balance(new_account)
         assert usdt_balance_after == amount * 1000000000000
 
-
     @pytest.mark.multipletokens
-    def test_transfer_wrapped_sol_token_from_solana_to_neon(
-        self, solana_account, web3_client_sol, evm_loader
-    ):
+    def test_transfer_wrapped_sol_token_from_solana_to_neon(self, solana_account, web3_client_sol, evm_loader):
         new_account = self.web3_client.create_account()
 
         amount = 0.1
@@ -141,7 +123,6 @@ class TestWithdraw:
         amount = move_amount * pow(10, 18)
         with pytest.raises(error):
             self.withdraw(self.accounts.create_account(10000), solana_account, amount, withdraw_contract)
-
 
     @pytest.mark.only_stands
     def test_success_withdraw_to_non_existing_account(
