@@ -964,6 +964,7 @@ def prepare_accounts(count, amount, network):
 @click.option("-n", "--network", default="night-stand", type=str, help="In which stand run tests")
 @click.option("-p", "--param", type=str, help="any network param like proxy_url, network_id e.t.c")
 def print_network_param(network, param):
+    network_manager = NetworkManager(network)
     print(network_manager.get_network_param(network, param))
 
 
