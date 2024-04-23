@@ -75,7 +75,6 @@ jobs:
           TFSTATE_KEY: ${{vars.TFSTATE_KEY_PREFIX}}-${{ github.run_number }}
           TFSTATE_REGION: ${{vars.TFSTATE_REGION}}
           TF_VAR_ci_pp_solana_url: ${{ secrets.SOLANA_URL }}
-          DEVNET_FAUCET_URL: ${{ secrets.DEVNET_FAUCET_URL }}
         uses: ./.github/actions/create-tf-stand
         with:
           ci_stands_key_hcloud: ${{ secrets.CI_STANDS_KEY_HCLOUD }}
