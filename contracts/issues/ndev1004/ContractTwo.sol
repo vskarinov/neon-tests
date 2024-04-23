@@ -1,6 +1,7 @@
 pragma solidity >=0.8.0;
 
 contract ContractTwo {
+    event EventContractTwo(string text);
     function deposit() public payable {}
 
     function getBalance() public view returns (uint256) {
@@ -12,4 +13,12 @@ contract ContractTwo {
         (bool success, ) = _contractOne.call{value: 1, gas: 100000}(payload);
         require(!success);
     }
+
+    function depositOnContractOneAssertFalse(address _contractOne) public returns (bool) {
+        emit EventContractTwo("depositOnContractOneWithEvent");
+        bytes memory payload = abi.encodeWithSignature("depositAndEmitEventAssertFalse()");
+        (bool success, ) = _contractOne.call{value: 1, gas: 100000}(payload);
+        return success;
+    }
+
 }

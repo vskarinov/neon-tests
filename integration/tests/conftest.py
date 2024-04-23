@@ -355,6 +355,18 @@ def event_caller_contract(web3_client, accounts) -> tp.Any:
     event_caller, _ = web3_client.deploy_and_get_contract("common/EventCaller", "0.8.12", accounts[0])
     yield event_caller
 
+@pytest.fixture(scope="class")
+def contract_caller_for_another_contract(web3_client, accounts) -> tp.Any:
+    _, contract_deploy_tx = web3_client.deploy_and_get_contract(
+        "issues/ndev1004/ContractOne", "0.8.15", account=accounts[0]
+    )
+    address = contract_deploy_tx["contractAddress"]
+
+    contract, _ = web3_client.deploy_and_get_contract(
+        "issues/ndev1004/ContractTwo", "0.8.15", account=accounts[0]
+    )
+    yield contract, address
+
 
 @pytest.fixture(scope="class")
 def wsol(web3_client_sol, class_account_sol_chain):
