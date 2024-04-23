@@ -43,10 +43,6 @@ on:
 
 env:
   NETWORK: ${{ inputs.network || 'terraform' }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.DAPPS_AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.DAPPS_AWS_SECRET_ACCESS_KEY }}
-  AWS_REGION: us-east-2
-  AWS_S3_BUCKET: neon-tests-dapps
   BUILD_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   DUMP_ENVS: True
   ALL_DAPPS: "aave,curve,uniswap-v2,uniswap-v3,saddle,yearn,robonomics,compound,curve-factory,pancake"
@@ -88,6 +84,7 @@ jobs:
         with:
           network: ${{ env.NETWORK }}
           devnet_solana_url: ${{ secrets.SOLANA_URL }}
+          devnet_faucet_url: ${{ secrets.DEVNET_FAUCET_URL }}
           proxy_ip: ${{ steps.prepare_terraform.outputs.proxy_ip }}
           solana_ip: ${{ steps.prepare_terraform.outputs.solana_ip }}
           proxy_url: ${{ inputs.proxy_url }}
@@ -111,7 +108,7 @@ jobs:
     uses: ./.github/workflows/dapps_reusable.yml
     secrets: inherit
     with:
-      network: terraform
+      network: ${{ needs.prepare.outputs.network }}
       dapps: ${{ needs.prepare.outputs.dapps }}
       proxy_url: ${{ needs.prepare.outputs.proxy_url }}
       solana_url: ${{ needs.prepare.outputs.solana_url }}
