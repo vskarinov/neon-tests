@@ -616,4 +616,4 @@ jobs:
           python3 ./clickfile.py dapps report --directory=reports \
           --pr_url_for_report=${{ inputs.pr_url_for_report }} \
           --token=${{secrets.GHTOKEN}} \
-          --network= ${env.NETWORK}
+          --network=${{env.NETWORK}}
