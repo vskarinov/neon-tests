@@ -27,7 +27,6 @@ on:
 env:
   JOBS_NUMBER: ${{ github.event.inputs.jobsNumber || '8' }}
   NETWORK: ${{ github.event.inputs.network || 'terraform' }}
-  DEVNET_FAUCET_URL: ${{ secrets.DEVNET_FAUCET_URL }}
   IMAGE:  neonlabsorg/neon_tests
   CONTAINER:  oz-${{ github.run_id }}
   BUILD_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -71,6 +70,7 @@ jobs:
         with:
           network: ${{ env.NETWORK }}
           devnet_solana_url: ${{ secrets.SOLANA_URL }}
+          devnet_faucet_url: ${{ secrets.DEVNET_FAUCET_URL }}
           proxy_ip: ${{ steps.prepare_terraform.outputs.proxy_ip }}
           solana_ip: ${{ steps.prepare_terraform.outputs.solana_ip }}
           proxy_url: ${{ github.event.inputs.proxy_url }}
