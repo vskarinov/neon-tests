@@ -29,7 +29,6 @@ class NetworkManager:
                 for var in ["FAUCET_URL", "SOLANA_URL"]:
                     environments[NETWORK_NAME].update({var.lower(): os.environ.get(var, "")})
                     self._networks[NETWORK_NAME][var.lower()] = environments[NETWORK_NAME][var.lower()]
-            
 
     def get_network_param(self, network, params=None):
         value = ""
@@ -51,4 +50,10 @@ class NetworkManager:
             network["proxy_url"] = self.get_network_param(network_name, "proxy_url")
             network["solana_url"] = self.get_network_param(network_name, "solana_url")
             network["faucet_url"] = self.get_network_param(network_name, "faucet_url")
+        if network_name == "devnet":
+            if "DEVNET_FAUCET_URL" in os.environ and os.environ["DEVNET_FAUCET_URL"]:
+                network["faucet_url"] = os.environ.get("DEVNET_FAUCET_URL")
+            else:
+                raise RuntimeError("DEVNET_FAUCET_URL is not set")
+
         return network

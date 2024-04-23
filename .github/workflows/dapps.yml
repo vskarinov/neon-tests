@@ -45,6 +45,7 @@ env:
   NETWORK: ${{ inputs.network || 'terraform' }}
   AWS_ACCESS_KEY_ID: ${{ secrets.DAPPS_AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.DAPPS_AWS_SECRET_ACCESS_KEY }}
+  DEVNET_FAUCET_URL: ${{ secrets.DEVNET_FAUCET_URL }}
   AWS_REGION: us-east-2
   AWS_S3_BUCKET: neon-tests-dapps
   BUILD_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
