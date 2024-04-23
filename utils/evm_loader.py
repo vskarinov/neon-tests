@@ -32,7 +32,7 @@ from utils.instructions import (
     make_ExecuteTrxFromAccountDataIterativeOrContinue,
     make_CreateBalanceAccount,
     make_CreateAssociatedTokenIdempotent,
-    make_DepositV03,
+    make_DepositV03, make_wSOL,
 )
 from utils.layouts import BALANCE_ACCOUNT_LAYOUT, CONTRACT_ACCOUNT_LAYOUT, STORAGE_CELL_LAYOUT
 from utils.solana_client import SolanaClient
