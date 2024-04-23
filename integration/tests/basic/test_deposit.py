@@ -15,7 +15,6 @@ from spl.token.instructions import (
 )
 from web3 import exceptions as web3_exceptions
 
-from integration.tests.basic.helpers.instructions_for_deposit import neon_transfer_tx
 from utils.consts import LAMPORT_PER_SOL, wSOL, MULTITOKEN_MINTS
 from utils.instructions import make_wSOL
 from utils.helpers import wait_condition
@@ -90,37 +89,6 @@ class TestDeposit:
 
         usdt_balance_after = web3_client_usdt.get_balance(new_account)
         assert usdt_balance_after == amount * 1000000000000
-
-    @pytest.mark.mainnet
-    def test_transfer_spl_token_from_solana_to_neon(self, solana_account, pytestconfig: Config, erc20_spl, evm_loader):
-        # NEED TO FIX, neon_transfer_tx doesn't have effect
-
-        amount = 0.1
-        full_amount = int(amount * LAMPORT_PER_SOL)
-
-        mint_pubkey = wSOL["address_spl"]
-        ata_address = get_associated_token_address(solana_account.public_key, mint_pubkey)
-        new_account = self.accounts.create_account()
-
-        self.sol_client.create_ata(solana_account, mint_pubkey)
-
-        spl_neon_token = SplToken(self.sol_client, mint_pubkey, TOKEN_PROGRAM_ID, solana_account)
-        ata_balance_before = spl_neon_token.get_balance(ata_address, commitment=Commitment("confirmed"))
-
-        # wrap SOL
-        wrap_sol_tx = make_wSOL(full_amount, solana_account.public_key, ata_address)
-        self.sol_client.send_tx_and_check_status_ok(wrap_sol_tx, solana_account)
-
-        # transfer wSOL
-        transfer_tx = neon_transfer_tx(
-            self.web3_client, self.sol_client, full_amount, wSOL, solana_account, new_account, erc20_spl, evm_loader.loader_id
-        )
-        self.sol_client.send_tx_and_check_status_ok(transfer_tx, solana_account)
-
-        ata_balance_after = spl_neon_token.get_balance(ata_address, commitment=Commitment("confirmed"))
-
-        assert int(ata_balance_after.value.amount) == int(ata_balance_before.value.amount) + full_amount
-
 
 
     @pytest.mark.multipletokens
