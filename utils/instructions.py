@@ -7,8 +7,9 @@ from solana.system_program import SYS_PROGRAM_ID
 from solana.transaction import AccountMeta, TransactionInstruction
 from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID
 
-COMPUTE_BUDGET_ID: PublicKey = PublicKey(
-    "ComputeBudget111111111111111111111111111111")
+from utils.consts import COMPUTE_BUDGET_ID
+from utils.helpers import solana_pubkey_to_bytes32
+
 DEFAULT_UNITS = 500 * 1000
 DEFAULT_HEAP_FRAME = 256 * 1024
 
@@ -196,3 +197,15 @@ def get_solana_wallet_signer(solana_account, neon_account, web3_client):
     new_wallet = hashlib.sha256(solana_wallet + neon_wallet).hexdigest()
     emulate_signer_private_key = f'0x{new_wallet}'
     return web3_client.eth.account.from_key(emulate_signer_private_key)
+
+def serialize_instruction(program_id, instruction) -> bytes:
+    program_id_bytes = solana_pubkey_to_bytes32(PublicKey(program_id))
+    serialized = program_id_bytes + len(instruction.keys).to_bytes(8, "little")
+
+    for key in instruction.keys:
+        serialized += bytes(key.pubkey)
+        serialized += key.is_signer.to_bytes(1, "little")
+        serialized += key.is_writable.to_bytes(1, "little")
+
+    serialized += len(instruction.data).to_bytes(8, "little") + instruction.data
+    return serialized

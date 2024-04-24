@@ -6,13 +6,14 @@ from integration.tests.neon_evm.solana_utils import (
     write_transaction_to_holder_account,
     execute_trx_from_account_with_solana_call,
 )
-from integration.tests.neon_evm.utils.constants import NEON_CORE_API_URL, SOLANA_CALL_PRECOMPILED_ID
+from integration.tests.neon_evm.utils.constants import NEON_CORE_API_URL
 from integration.tests.neon_evm.utils.contract import deploy_contract, make_contract_call_trx
 from integration.tests.neon_evm.utils.ethereum import make_eth_transaction
-from integration.tests.neon_evm.utils.instructions import serialize_instruction
 from integration.tests.neon_evm.utils.neon_api_client import NeonApiClient
 from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text
+from utils.consts import SOLANA_CALL_PRECOMPILED_ID
 from utils.helpers import bytes32_to_solana_pubkey
+from utils.instructions import serialize_instruction
 from utils.metaplex import SYSTEM_PROGRAM_ID
 
 

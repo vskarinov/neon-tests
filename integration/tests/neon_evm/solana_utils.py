@@ -26,13 +26,13 @@ from spl.token.instructions import get_associated_token_address, ApproveParams, 
 
 from .utils.constants import CHAIN_ID
 
-from .utils.constants import EVM_LOADER, SOLANA_URL, SYSTEM_ADDRESS, NEON_TOKEN_MINT_ID, \
+from .utils.constants import EVM_LOADER, SOLANA_URL, NEON_TOKEN_MINT_ID, \
     ACCOUNT_SEED_VERSION, TREASURY_POOL_SEED
 from .utils.instructions import make_DepositV03, make_Cancel, make_WriteHolder, make_ExecuteTrxFromInstruction, \
     TransactionWithComputeBudget, make_PartialCallOrContinueFromRawEthereumTX, \
     make_ExecuteTrxFromAccountDataIterativeOrContinue, make_CreateAssociatedTokenIdempotent, make_ExecuteTrxFromAccount
 
-from .utils.layouts import BALANCE_ACCOUNT_LAYOUT, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, CONTRACT_ACCOUNT_LAYOUT, \
+from .utils.layouts import BALANCE_ACCOUNT_LAYOUT, CONTRACT_ACCOUNT_LAYOUT, \
     STORAGE_CELL_LAYOUT
 from .types.types import Caller, Contract
 
@@ -278,7 +278,7 @@ class EvmLoader:
             data=data,
             keys=[
                 AccountMeta(pubkey=self.acc.public_key, is_signer=True, is_writable=True),
-                AccountMeta(pubkey=PublicKey(SYSTEM_ADDRESS), is_signer=False, is_writable=False),
+                AccountMeta(pubkey=sp.SYS_PROGRAM_ID, is_signer=False, is_writable=False),
                 AccountMeta(pubkey=account_pubkey, is_signer=False, is_writable=True),
                 AccountMeta(pubkey=contract_pubkey, is_signer=False, is_writable=True),
             ]))

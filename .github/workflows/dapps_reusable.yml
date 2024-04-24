@@ -48,6 +48,8 @@ on:
 env:
   NETWORK: ${{ inputs.network }}
   DUMP_ENVS: True
+  DEVNET_FAUCET_URL: ${{ secrets.DEVNET_FAUCET_URL }}
+  DEVNET_SOLANA_URL: ${{ secrets.SOLANA_URL }}
 
 jobs:
   uniswap-v2:
@@ -326,7 +328,7 @@ jobs:
       - name: Run deployment
         timeout-minutes: 10
         run: |
-          python3 scripts/curve-deploy.py
+          python3 -u scripts/curve-deploy.py
 
       - name: Save report
         uses: actions/upload-artifact@v4

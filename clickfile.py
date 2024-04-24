@@ -544,7 +544,7 @@ def run(name, jobs, numprocesses, ui_item, amount, users, network):
         if numprocesses:
             command = f"{command} --numprocesses {numprocesses} --dist loadgroup"
     elif name == "tracer":
-        command = "py.test -n 50 integration/tests/tracer"
+        command = "py.test -n 5 integration/tests/tracer"
     elif name == "services":
         command = "py.test integration/tests/services"
         if numprocesses:
@@ -949,7 +949,7 @@ def destroy():
 
 @infra.command(name="download-logs", help="Download remote docker logs")
 def download_logs():
-    dapps_cli.download_remote_docker_logs()
+    infrastructure.download_remote_docker_logs()
 
 
 @infra.command(name="gen-accounts", help="Setup accounts with balance")
@@ -964,6 +964,7 @@ def prepare_accounts(count, amount, network):
 @click.option("-n", "--network", default="night-stand", type=str, help="In which stand run tests")
 @click.option("-p", "--param", type=str, help="any network param like proxy_url, network_id e.t.c")
 def print_network_param(network, param):
+    network_manager = NetworkManager(network)
     print(network_manager.get_network_param(network, param))
 
 

@@ -13,6 +13,7 @@ from playwright.sync_api import expect
 
 from ui import components
 from ui.pages import phantom, metamask
+from utils.consts import Time
 from . import BasePage
 from ..libs import Platform, Token, PriorityFee, TransactionFee
 
@@ -88,7 +89,6 @@ class NeonPassPage(BasePage):
     @allure.step("Connect Phantom Wallet")
     def connect_phantom(self, timeout: float = 30000) -> None:
         """Connect Phantom Wallet"""
-        self.page_loaded()
         # Wait page loaded
         if self._is_source_tab_loaded:
             pass
@@ -102,13 +102,13 @@ class NeonPassPage(BasePage):
                     selector=app_wallets_dialog + "//*[text()='Select Wallet']", timeout=timeout
                 )
                 components.Button(self.page, selector=app_wallets_dialog + "//*[text()='Phantom']/parent::*").click()
-            self._handle_phantom_unlock(phantom_page_info.value)
         except TimeoutError as e:
             if 'waiting for event "page"' not in e.message:
                 raise e
 
+        self._handle_phantom_unlock(phantom_page_info.value)
         self.page.wait_for_selector(
-            selector="//app-wallet-button[@label='From']//*[contains(text(),'B4t7')]", timeout=timeout
+            selector="//app-wallet-button[@label='From']//*[contains(text(),'B4t7')]", timeout=30000
         )
 
     @allure.step("Connect Metamask Wallet")
@@ -144,7 +144,7 @@ class NeonPassPage(BasePage):
         self.page.wait_for_selector(selector="//label[contains(text(), 'balance')]")
         components.Input(self.page, selector="//input[contains(@class, 'token-amount-input')]").fill(str(amount))
 
-    @allure.step("Set transaction fee {fee}")
+    @allure.step("Set transaction fee {transaction_fee}")
     def set_transaction_fee(self, transaction_fee: Optional[TransactionFee]) -> None:
         """Set transaction fee type"""
         if transaction_fee is None:

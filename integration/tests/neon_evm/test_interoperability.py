@@ -11,6 +11,7 @@ from solana.rpc.commitment import Confirmed
 from solana.rpc.core import RPCException
 from solana.rpc.types import TxOpts
 import spl.token.client
+from solana.system_program import SYS_PROGRAM_ID
 from solana.transaction import TransactionInstruction, AccountMeta
 from spl.token.instructions import (
     create_associated_token_account,
@@ -26,27 +27,26 @@ from integration.tests.neon_evm.solana_utils import (
     wait_for_account_to_exists)
 from integration.tests.neon_evm.types.types import Caller
 from integration.tests.neon_evm.utils.call_solana import SolanaCaller
+
+
 from integration.tests.neon_evm.utils.constants import (
-    COMPUTE_BUDGET_ID,
-    MEMO_PROGRAM_ID,
-    SOLANA_CALL_PRECOMPILED_ID,
     NEON_TOKEN_MINT_ID,
-    COUNTER_ID,
-    SYSTEM_ADDRESS,
-    TRANSFER_SOL_ID,
-    TRANSFER_TOKENS_ID,
     CHAIN_ID,
 )
 from integration.tests.neon_evm.utils.contract import deploy_contract, make_contract_call_trx
+
 from integration.tests.neon_evm.utils.ethereum import make_eth_transaction
 from integration.tests.neon_evm.utils.instructions import (
-    make_CreateAssociatedTokenIdempotent,
-    serialize_instruction
+    make_CreateAssociatedTokenIdempotent
 )
 from integration.tests.neon_evm.utils.layouts import COUNTER_ACCOUNT_LAYOUT
+
+from utils.consts import MEMO_PROGRAM_ID, COMPUTE_BUDGET_ID, SOLANA_CALL_PRECOMPILED_ID, COUNTER_ID, TRANSFER_SOL_ID, \
+    TRANSFER_TOKENS_ID
+
 from integration.tests.neon_evm.utils.transaction_checks import check_transaction_logs_have_text, decode_logs
 
-from utils.instructions import DEFAULT_UNITS
+from utils.instructions import DEFAULT_UNITS, serialize_instruction
 from utils.metaplex import ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, TOKEN_PROGRAM_ID
 
 
@@ -200,12 +200,12 @@ class TestInteroperability:
         amount = random.randint(1, 1000000)
         instruction = TransactionInstruction(
             program_id=TRANSFER_SOL_ID,
-            keys=[
-                AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
-                AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
-                AccountMeta(PublicKey(SYSTEM_ADDRESS), is_signer=False, is_writable=False),
-            ],
-            data=bytes([0x0]) + amount.to_bytes(8, "little"),
+            keys=[AccountMeta(sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
+                  AccountMeta(recipient.public_key, is_signer=False, is_writable=True),
+                  AccountMeta(SYS_PROGRAM_ID, is_signer=False, is_writable=False),
+                  ],
+            data=bytes([0x0]) + amount.to_bytes(8, "little")
+
         )
         call_params = [(TRANSFER_SOL_ID, 0, instruction)]
         balance_before = solana_client.get_balance(recipient.public_key).value
@@ -321,7 +321,6 @@ class TestInteroperability:
         with pytest.raises(RPCException, match="Cross-program invocation with unauthorized signer or writable account"):
             solana_caller.execute(TOKEN_PROGRAM_ID, instruction, sender=from_wallet)
 
-    @pytest.mark.skip(reason="NDEV-2837")
     def test_staticcall_does_not_support_external_call(
         self, sender_with_tokens, solana_caller, operator_keypair, evm_loader, treasury_pool
     ):
@@ -332,6 +331,7 @@ class TestInteroperability:
             evm_loader,
             treasury_pool,
             contract_name="CommonCaller",
+            version="0.8.3",
         )
 
         resource_addr = solana_caller.create_resource(sender_with_tokens, b"123", 8, 1000000000, COUNTER_ID)
@@ -381,7 +381,6 @@ class TestInteroperability:
         else:
             assert False, f"Expected error but got {resp}"
 
-    @pytest.mark.skip(reason="NDEV-2837")
     def test_call_neon_instruction_by_neon_instruction(
         self,
         sender_with_tokens,
@@ -403,7 +402,7 @@ class TestInteroperability:
             data=data,
             keys=[
                 AccountMeta(pubkey=sender_with_tokens.solana_account.public_key, is_signer=True, is_writable=True),
-                AccountMeta(pubkey=PublicKey(SYSTEM_ADDRESS), is_signer=False, is_writable=False),
+                AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
                 AccountMeta(pubkey=account_pubkey, is_signer=False, is_writable=True),
                 AccountMeta(pubkey=contract_pubkey, is_signer=False, is_writable=True),
             ],
