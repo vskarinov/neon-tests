@@ -5,18 +5,16 @@ Created on 2022-06-16
 """
 
 import os
-from time import sleep
 from typing import Optional
 
 import allure
 from playwright._impl._errors import TimeoutError
 from playwright.sync_api import expect
 
-from ui import components, libs
+from ui import components
 from ui.pages import phantom, metamask
-from utils.consts import Time
 from . import BasePage
-from ..libs import Platform, Token, Tokens, PriorityFee, TransactionFee
+from ..libs import Platform, Token, PriorityFee, TransactionFee
 
 
 class NeonPassPage(BasePage):
@@ -24,13 +22,11 @@ class NeonPassPage(BasePage):
         super(NeonPassPage, self).__init__(*args, **kwargs)
 
     def page_loaded(self) -> None:
-        self.page.wait_for_selector("button.wallet-button")
+        self.page.wait_for_selector("//h1[text()='NEONPASS']")
 
     @staticmethod
     def _handle_phantom_unlock(page) -> None:
-        page.wait_for_load_state()
         phantom_page = phantom.PhantomUnlockPage(page)
-        phantom_page.page_loaded()
         phantom_page.unlock(os.environ.get("CHROME_EXT_PASSWORD"))
 
     @staticmethod
@@ -92,6 +88,7 @@ class NeonPassPage(BasePage):
     @allure.step("Connect Phantom Wallet")
     def connect_phantom(self, timeout: float = 30000) -> None:
         """Connect Phantom Wallet"""
+        self.page_loaded()
         # Wait page loaded
         if self._is_source_tab_loaded:
             pass
@@ -106,12 +103,13 @@ class NeonPassPage(BasePage):
                 )
                 components.Button(self.page, selector=app_wallets_dialog + "//*[text()='Phantom']/parent::*").click()
             self._handle_phantom_unlock(phantom_page_info.value)
-            self.page.wait_for_selector(
-                selector="//app-wallet-button[@label='From']//*[contains(text(),'B4t7')]", timeout=timeout
-            )
         except TimeoutError as e:
             if 'waiting for event "page"' not in e.message:
                 raise e
+
+        self.page.wait_for_selector(
+            selector="//app-wallet-button[@label='From']//*[contains(text(),'B4t7')]", timeout=timeout
+        )
 
     @allure.step("Connect Metamask Wallet")
     def connect_metamask(self, timeout: float = 30000) -> None:
@@ -127,12 +125,13 @@ class NeonPassPage(BasePage):
                 self.page.locator("w3m-modal").locator("button", has_text="MetaMask").click()
                 # components.Button(self.page, selector="w3m-wallet-button[name='MetaMask']").click()
             self._handle_metamask_connect(mm_page_connect.value)
-            self.page.wait_for_selector(
-                selector="//app-wallet-button[@label='To']//*[contains(text(),'0x4701')]", timeout=timeout
-            )
         except TimeoutError as e:
             if 'waiting for event "page"' not in e.message:
                 raise e
+
+        self.page.wait_for_selector(
+            selector="//app-wallet-button[@label='To']//*[contains(text(),'0x4701')]", timeout=timeout
+        )
 
     @allure.step("Set source token to {token} and amount to {amount}")
     def set_source_token(self, token: str, amount: float) -> None:
