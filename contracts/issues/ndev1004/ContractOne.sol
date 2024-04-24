@@ -27,6 +27,6 @@ contract ContractOne {
     function depositAndEmitEventRevert() public payable {
         addressBalances[msg.sender] += msg.value;
         emit EventContractOne("depositAndEmitEvent");
-        revert();
+        revert("Revert Contract Two");
     }
 }

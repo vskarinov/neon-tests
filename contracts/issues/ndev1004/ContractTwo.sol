@@ -14,11 +14,36 @@ contract ContractTwo {
         require(!success);
     }
 
-    function depositOnContractOneAssertFalse(address _contractOne) public returns (bool) {
+    function depositOnContractOneRevertWithAssertFalse(
+        address _contractOne
+    ) public returns (bool) {
         emit EventContractTwo("depositOnContractOneWithEvent");
-        bytes memory payload = abi.encodeWithSignature("depositAndEmitEventAssertFalse()");
+        bytes memory payload = abi.encodeWithSignature(
+            "depositAndEmitEventAssertFalse()"
+        );
         (bool success, ) = _contractOne.call{value: 1, gas: 100000}(payload);
         return success;
     }
 
+    function depositOnContractOneRevert(
+        address _contractOne
+    ) public returns (bool) {
+        emit EventContractTwo("depositOnContractOneWithEvent");
+        bytes memory payload = abi.encodeWithSignature(
+            "depositAndEmitEventRevert()"
+        );
+        (bool success, ) = _contractOne.call{value: 1, gas: 100000}(payload);
+        return success;
+    }
+
+    function depositOnContractOneRevertWithRequire(
+        address _contractOne
+    ) public returns (bool) {
+        emit EventContractTwo("depositOnContractOneWithEvent");
+        bytes memory payload = abi.encodeWithSignature(
+            "depositAndEmitEventRevertWithRequire()"
+        );
+        (bool success, ) = _contractOne.call{value: 1, gas: 100000}(payload);
+        return success;
+    }
 }
