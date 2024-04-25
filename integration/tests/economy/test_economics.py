@@ -108,7 +108,6 @@ class TestEconomics:
         token_diff = w3_client.to_main_currency(token_balance_after - token_balance_before)
         assert_profit(sol_diff, sol_price, token_diff, token_price, w3_client.native_token_name)
 
-    @pytest.mark.skip(reason="https://neonlabs.atlassian.net/browse/NDEV-2814")
     def test_send_tokens_without_chain_id(
         self, account_with_all_tokens, client_and_price, web3_client, sol_price, operator, neon_price
     ):
