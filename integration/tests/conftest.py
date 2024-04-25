@@ -10,11 +10,14 @@ import allure
 import base58
 import pytest
 from _pytest.config import Config
+from packaging import version
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
 from solana.rpc import commitment
 from solana.rpc.types import TxOpts
 
+from clickfile import network_manager
+from utils import web3client
 from utils.apiclient import JsonRPCSession
 from utils.consts import LAMPORT_PER_SOL, MULTITOKEN_MINTS
 from utils.erc20 import ERC20
@@ -33,6 +36,16 @@ def pytest_collection_modifyitems(config, items):
     deselected_marks = []
     network_name = config.getoption("--network")
 
+    settings = network_manager.get_network_object(network_name)
+    web3_client = web3client.NeonChainWeb3Client(settings["proxy_url"])
+
+    raw_proxy_version = web3_client.get_proxy_version()["result"]
+    if "Neon-proxy/" in raw_proxy_version:
+        raw_proxy_version = raw_proxy_version.split("Neon-proxy/")[1].strip()
+    if "-" in raw_proxy_version:
+        raw_proxy_version = raw_proxy_version.split("-")[0].strip()
+    proxy_version = version.parse(raw_proxy_version)
+
     if network_name == "devnet":
         deselected_marks.append("only_stands")
     else:
@@ -46,13 +59,19 @@ def pytest_collection_modifyitems(config, items):
         environments = json.load(f)
 
     if len(environments[network_name]["network_ids"]) == 1:
-        deselected_marks.append("multipletokens")    
+        deselected_marks.append("multipletokens")
 
     for item in items:
         if any([item.get_closest_marker(mark) for mark in deselected_marks]):
             deselected_items.append(item)
         else:
             selected_items.append(item)
+
+        raw_item_pv = [mark.args[0] for mark in item.iter_markers(name="proxy_version")]
+        if len(raw_item_pv) > 0:
+            item_proxy_version = version.parse(raw_item_pv[0])
+            if item_proxy_version > proxy_version:
+                deselected_items.append(item)
 
     config.hook.pytest_deselected(items=deselected_items)
     items[:] = selected_items
@@ -80,6 +99,7 @@ def sol_client(request, sol_client_session):
     if inspect.isclass(request.cls):
         request.cls.sol_client = sol_client_session
     yield sol_client_session
+
 
 @pytest.fixture(scope="session")
 def web3_client_sol(pytestconfig: Config) -> tp.Union[Web3Client, None]:
@@ -210,21 +230,19 @@ def erc20_spl(
 
 
 @pytest.fixture(scope="session")
-def erc20_simple(web3_client_session, 
-                 faucet, 
-                 accounts_session, 
-                 eth_bank_account
-):
-    erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0])
+def erc20_simple(web3_client_session, faucet, accounts_session, eth_bank_account):
+    erc20 = ERC20(
+        web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0]
+    )
     yield erc20
 
 
 @pytest.fixture(scope="session")
 def erc20_spl_mintable(
-    web3_client_session: NeonChainWeb3Client, 
-    faucet, 
-    sol_client_session, 
-    solana_account, 
+    web3_client_session: NeonChainWeb3Client,
+    faucet,
+    sol_client_session,
+    solana_account,
     accounts_session,
     eth_bank_account,
 ):
@@ -263,9 +281,11 @@ def class_account_sol_chain(
     )
     return account
 
+
 @pytest.fixture(scope="class")
 def evm_loader(pytestconfig):
     return EvmLoader(pytestconfig.environment.evm_loader, pytestconfig.environment.solana_url)
+
 
 @pytest.fixture(scope="class")
 def account_with_all_tokens(
