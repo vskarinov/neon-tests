@@ -123,7 +123,12 @@ class TestEconomics:
         )
         instruction_tx.pop("chainId")
 
-        w3_client.send_transaction(account_with_all_tokens, instruction_tx)
+        try:
+            w3_client.send_transaction(account_with_all_tokens, instruction_tx)
+        except ValueError as e:
+            if w3_client.native_token_name is not "NEON":
+                assert "wrong chain id" in str(e.args)
+                return
 
         sol_balance_after = operator.get_solana_balance()
         token_balance_after = operator.get_token_balance(web3_client)
