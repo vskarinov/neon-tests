@@ -26,6 +26,7 @@ class TestContractRecursion:
         )
         return contract
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_deploy_with_recursion(self, recursion_factory):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)
@@ -51,6 +52,7 @@ class TestContractRecursion:
         assert len(addresses) == 2
         assert ZERO_ADDRESS in addresses
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_deploy_with_recursion_via_create(self, recursion_factory):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)
@@ -63,6 +65,7 @@ class TestContractRecursion:
         assert len(addresses) == 3
         assert ZERO_ADDRESS not in addresses
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_deploy_to_the_same_address_via_create2_one_trx(self, recursion_factory):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)

@@ -301,6 +301,7 @@ class TestERC721:
         assert balance_usr1_after - balance_usr_before == -1
         assert balance_contract_after - balance_contract_before == 1
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_safeTransferFrom_with_data(self, erc721, token_id, nft_receiver):
         balance_usr1_before = erc721.contract.functions.balanceOf(erc721.account.address).call()
         balance_usr2_before = erc721.contract.functions.balanceOf(nft_receiver.address).call()
@@ -316,6 +317,7 @@ class TestERC721:
         assert balance_usr1_after - balance_usr1_before == -1
         assert balance_usr2_after - balance_usr2_before == 1
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_safeTransferFrom_to_invalid_contract(self, erc721, token_id, invalid_nft_receiver):
         with pytest.raises(
             web3.exceptions.ContractLogicError,
@@ -334,6 +336,7 @@ class TestERC721:
         token_id = erc721.safe_mint(seed, erc721.account.address, uri)
         self.metaplex_checks(token_id)
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_safeMint_to_contract(self, erc721, nft_receiver):
         seed = self.web3_client.text_to_bytes32(gen_hash_of_block(8))
         uri = generate_text(min_len=10, max_len=200)
@@ -471,6 +474,7 @@ class TestERC721:
         assert int(token_amount["decimals"]) == 0
 
 
+@pytest.mark.proxy_version("v1.12.0")
 @allure.feature("ERC Verifications")
 @allure.story("ERC721: Tests for multiple actions in one transaction")
 @pytest.mark.usefixtures("accounts", "web3_client", "sol_client")

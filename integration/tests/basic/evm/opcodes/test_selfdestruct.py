@@ -90,6 +90,7 @@ class TestSelfDestructOpcode:
         assert recipient_balance_after - recipient_balance_before == 2
         assert json_rpc_client.get_contract_code(destroyable_contract.address) != "0x"
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_destroy_contract_and_sent_neon_from_contract_in_one_trx(
         self, destroyable_contract, contract_caller, json_rpc_client
     ):

@@ -55,6 +55,7 @@ class TestRpcEstimateGas:
         assert code == Error32000.CODE, "wrong code"
         assert Error32000.MISSING_ARGUMENT in message, "wrong message"
 
+    @pytest.mark.proxy_version("v1.12.0")
     @pytest.mark.parametrize("contract_name", ["BigGasFactory1", "BigGasFactory2"])
     @pytest.mark.parametrize("process_gas, reserve_gas", [(850_000, 15_000), (8_500_000, 150_000)])
     def test_eth_estimate_gas_with_big_int(self, contract_name, process_gas, reserve_gas, json_rpc_client):
@@ -101,6 +102,7 @@ class TestRpcEstimateGas:
         estimated_gas = transaction["gas"]
         assert estimated_gas == 25_000
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_rpc_estimate_gas_erc20(self, erc20_simple, pytestconfig):
         recipient_account = self.accounts[1]
         tx_receipt = erc20_simple.transfer(erc20_simple.owner, recipient_account, 1)
@@ -114,7 +116,7 @@ class TestRpcEstimateGas:
         else:
             assert estimated_gas == 1_192_320
 
-
+    @pytest.mark.proxy_version("v1.12.0")
     def test_rpc_estimate_gas_spl(self, erc20_spl):
         recipient_account = self.accounts[1]
         tx_receipt = erc20_spl.transfer(erc20_spl.account, recipient_account, 1)

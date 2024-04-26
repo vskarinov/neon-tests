@@ -73,6 +73,7 @@ class TestNeonRPCBaseCalls:
         sol_tx = response["result"][0]
         assert sol_client.wait_transaction(sol_tx) is not None
 
+    @pytest.mark.proxy_version("v1.12.0")
     @pytest.mark.mainnet
     def test_neon_get_solana_transaction_by_neon_transaction_list_of_tx(self, json_rpc_client, sol_client):
         sender_account = self.accounts[0]

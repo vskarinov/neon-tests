@@ -51,6 +51,7 @@ class TestNonce:
 
         self.check_transaction_list(tx_hash_list[::-1])
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_random_sequence(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]

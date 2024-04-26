@@ -23,6 +23,7 @@ class Method(Enum):
     NEON_GET_LOGS = "neon_getLogs"
 
 
+@pytest.mark.proxy_version("v1.12.0")
 @allure.feature("JSON-RPC validation")
 @allure.story("Verify getLogs method")
 @pytest.mark.usefixtures("accounts", "web3_client")

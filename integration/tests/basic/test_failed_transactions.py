@@ -11,6 +11,7 @@ class TestExpectedErrors:
     web3_client: NeonChainWeb3Client
     accounts: EthAccounts
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_bump_allocator_out_of_memory_expected_error(self):
         sender_account = self.accounts[0]
         contract, _ = self.web3_client.deploy_and_get_contract(

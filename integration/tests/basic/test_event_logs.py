@@ -74,7 +74,7 @@ class TestLogs:
 
         response = json_rpc_client.send_rpc(method="neon_getTransactionReceipt", params=[resp["transactionHash"].hex()])
         assert_log_field_in_neon_trx_receipt(response, 1)
-    
+
     def test_non_indexed_args_event(self, event_caller_contract, json_rpc_client):
         amount = random.randint(1, 100)
         sender_account = self.accounts[0]
@@ -146,6 +146,7 @@ class TestLogs:
         response = json_rpc_client.send_rpc(method="neon_getTransactionReceipt", params=[resp["transactionHash"].hex()])
         assert_log_field_in_neon_trx_receipt(response, changes_count)
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_event_logs_deleted_if_trx_was_canceled(self, event_caller_contract):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)
@@ -158,6 +159,7 @@ class TestLogs:
         except ValueError as exc:
             assert "Error: memory allocation failed, out of memory." in exc.args[0]["message"]
 
+    @pytest.mark.proxy_version("v1.12.0")
     def test_nested_calls_with_revert(self):
         sender_account = self.accounts[0]
         contract_a, _ = self.web3_client.deploy_and_get_contract(

@@ -7,6 +7,7 @@ from utils.accounts import EthAccounts
 from integration.tests.basic.helpers.assert_message import AssertMessage
 
 
+@pytest.mark.proxy_version("v1.12.0")
 @allure.feature("Ethereum compatibility")
 @allure.story("Basic tests for erc20_spl transfers")
 @pytest.mark.usefixtures("accounts", "web3_client")

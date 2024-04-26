@@ -9,6 +9,7 @@ NONCE_ID = 0
 CLASS_ID = 0
 
 
+@pytest.mark.proxy_version("v1.12.0")
 @allure.feature("EIP Verifications")
 @allure.story("ERC-3475: Abstract Storage Bonds")
 class TestAbstractStorageBonds:
