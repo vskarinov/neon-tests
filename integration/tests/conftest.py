@@ -39,9 +39,12 @@ def pytest_collection_modifyitems(config, items):
     settings = network_manager.get_network_object(network_name)
     web3_client = web3client.NeonChainWeb3Client(settings["proxy_url"])
 
+    proxy_dev = False
     raw_proxy_version = web3_client.get_proxy_version()["result"]
     if "Neon-proxy/" in raw_proxy_version:
         raw_proxy_version = raw_proxy_version.split("Neon-proxy/")[1].strip()
+    if "dev" in raw_proxy_version:
+        proxy_dev = True
     if "-" in raw_proxy_version:
         raw_proxy_version = raw_proxy_version.split("-")[0].strip()
     proxy_version = version.parse(raw_proxy_version)
@@ -70,7 +73,7 @@ def pytest_collection_modifyitems(config, items):
         raw_item_pv = [mark.args[0] for mark in item.iter_markers(name="proxy_version")]
         if len(raw_item_pv) > 0:
             item_proxy_version = version.parse(raw_item_pv[0])
-            if item_proxy_version > proxy_version:
+            if not proxy_dev and item_proxy_version > proxy_version:
                 deselected_items.append(item)
 
     config.hook.pytest_deselected(items=deselected_items)
