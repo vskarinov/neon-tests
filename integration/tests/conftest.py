@@ -356,17 +356,36 @@ def event_caller_contract(web3_client, accounts) -> tp.Any:
     yield event_caller
 
 @pytest.fixture(scope="class")
-def contract_caller_for_another_contract(web3_client, accounts) -> tp.Any:
+def caller_contract(web3_client, accounts) -> tp.Any:
     _, contract_deploy_tx = web3_client.deploy_and_get_contract(
-        "issues/ndev1004/ContractOne", "0.8.15", account=accounts[0]
+        "common/tracer/ContractCallee", "0.8.15", account=accounts[0]
     )
     address = contract_deploy_tx["contractAddress"]
 
     contract, _ = web3_client.deploy_and_get_contract(
-        "issues/ndev1004/ContractTwo", "0.8.15", account=accounts[0]
+        "common/tracer/ContractCaller", "0.8.15", account=accounts[0]
     )
     yield contract, address
 
+
+@pytest.fixture(scope="class")
+def opcodes_checker(web3_client, accounts):
+    contract, _ = web3_client.deploy_and_get_contract(
+        "opcodes/BaseOpCodes", "0.5.16", accounts[0], contract_name="BaseOpCodes"
+    )
+    return contract
+    
+
+@pytest.fixture(scope="class")
+def eip1052_checker(web3_client, accounts):
+    contract, _ = web3_client.deploy_and_get_contract(
+        "EIPs/EIP1052Extcodehash",
+        "0.8.10",
+        accounts[0],
+        contract_name="EIP1052Checker",
+    )
+    return contract
+    
 
 @pytest.fixture(scope="class")
 def wsol(web3_client_sol, class_account_sol_chain):

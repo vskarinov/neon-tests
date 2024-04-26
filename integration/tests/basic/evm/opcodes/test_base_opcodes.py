@@ -14,13 +14,6 @@ class TestOpCodes:
     web3_client: NeonChainWeb3Client
     accounts: EthAccounts
 
-    @pytest.fixture(scope="class")
-    def opcodes_checker(self, web3_client, faucet, accounts):
-        contract, _ = web3_client.deploy_and_get_contract(
-            "opcodes/BaseOpCodes", "0.5.16", accounts[0], contract_name="BaseOpCodes"
-        )
-        return contract
-
     def test_base_opcodes(self, opcodes_checker):
         sender_account = self.accounts[0]
         tx = self.web3_client.make_raw_tx(sender_account)

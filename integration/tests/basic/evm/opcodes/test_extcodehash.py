@@ -19,16 +19,6 @@ class TestExtCodeHashOpcode:
     web3_client: NeonChainWeb3Client
     accounts: EthAccounts
 
-    @pytest.fixture(scope="class")
-    def eip1052_checker(self, web3_client, faucet, accounts):
-        contract, _ = web3_client.deploy_and_get_contract(
-            "EIPs/EIP1052Extcodehash",
-            "0.8.10",
-            accounts[0],
-            contract_name="EIP1052Checker",
-        )
-        return contract
-
     def test_extcodehash_for_contract_address(self, eip1052_checker):
         contract_hash = eip1052_checker.functions.getContractHash(eip1052_checker.address).call()
         assert contract_hash == keccak(self.web3_client.eth.get_code(eip1052_checker.address, "latest"))
