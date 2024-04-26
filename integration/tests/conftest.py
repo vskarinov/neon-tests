@@ -41,6 +41,7 @@ def pytest_collection_modifyitems(config, items):
 
     proxy_dev = False
     raw_proxy_version = web3_client.get_proxy_version()["result"]
+    raw_proxy_version = "Neon-proxy/v1.11.2-53c743cff66d4f7ac3492443c51596fa42db854d"
     if "Neon-proxy/" in raw_proxy_version:
         raw_proxy_version = raw_proxy_version.split("Neon-proxy/")[1].strip()
     if "dev" in raw_proxy_version:
@@ -65,16 +66,21 @@ def pytest_collection_modifyitems(config, items):
         deselected_marks.append("multipletokens")
 
     for item in items:
+        raw_item_pv = [mark.args[0] for mark in item.iter_markers(name="proxy_version")]
+        select_item = True
+
         if any([item.get_closest_marker(mark) for mark in deselected_marks]):
             deselected_items.append(item)
-        else:
-            selected_items.append(item)
-
-        raw_item_pv = [mark.args[0] for mark in item.iter_markers(name="proxy_version")]
-        if len(raw_item_pv) > 0:
+            select_item = False
+        elif len(raw_item_pv) > 0:
             item_proxy_version = version.parse(raw_item_pv[0])
+
             if not proxy_dev and item_proxy_version > proxy_version:
                 deselected_items.append(item)
+                select_item = False
+
+        if select_item:
+            selected_items.append(item)
 
     config.hook.pytest_deselected(items=deselected_items)
     items[:] = selected_items
