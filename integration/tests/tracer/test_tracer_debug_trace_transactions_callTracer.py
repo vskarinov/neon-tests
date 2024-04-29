@@ -82,16 +82,7 @@ class TestDebugTraceTransactionCallTracer:
         diff = DeepDiff(expected_response, response["result"])
         assert ("dictionary_item_added" and "dictionary_item_removed") not in diff
 
-    def test_callTracer_type_create2(self, caller_contract):
-        sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
-
-        tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.callTypeCreate2().build_transaction(tx)
-        receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
-
-        tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-
+    def wait_for_trace_transaction_response_from_tracer(self, receipt, tracer_params):
         wait_condition(
             lambda: self.tracer_api.send_rpc(
                 method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
@@ -100,9 +91,20 @@ class TestDebugTraceTransactionCallTracer:
             timeout_sec=120,
         )
 
-        response = self.tracer_api.send_rpc(
+        return self.tracer_api.send_rpc(
             method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
         )
+
+    def test_callTracer_type_create2(self, caller_contract):
+        sender_account = self.accounts[0]
+        contractCaller = caller_contract[0]
+
+        tx = self.web3_client.make_raw_tx(from_=sender_account)
+        instruction_tx = contractCaller.functions.callTypeCreate2().build_transaction(tx)
+        receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
+        tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
+
         expected_response = self.fill_expected_response(instruction_tx, receipt, calls_value="0x0", calls_type="CREATE2")
         result_diff = DeepDiff(expected_response, response["result"])
         assert ("dictionary_item_added" and "dictionary_item_removed") not in result_diff
@@ -112,18 +114,7 @@ class TestDebugTraceTransactionCallTracer:
         receipt = storage_contract_with_deploy_tx[1]
         expected_response = {}
         tracer_params = { "tracer": "callTracer" }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         expected_response["from"] = receipt["from"].lower()
         expected_response["to"] = receipt["contractAddress"].lower()
@@ -139,18 +130,7 @@ class TestDebugTraceTransactionCallTracer:
         expected_response = {}
 
         tx_obj, _, receipt = call_storage(sender_account, storage_contract, store_value, "blockNumber", self.web3_client)
-        
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         expected_response["from"] = tx_obj["from"].lower()
         expected_response["to"] = tx_obj["to"].lower()
@@ -169,18 +149,7 @@ class TestDebugTraceTransactionCallTracer:
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         expected_response["from"] = instruction_tx["from"].lower()
         expected_response["to"] = instruction_tx["to"].lower()
@@ -203,52 +172,30 @@ class TestDebugTraceTransactionCallTracer:
 
     def test_callTracer_call_contract_from_contract_type_static_call(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.getBalanceOfContractCallee(address_of_contractOne).build_transaction(tx)
+        instruction_tx = contractCaller.functions.getBalanceOfContractCallee(address_of_contractOne).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "OnlyTopCall": True } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         expected_response = self.fill_expected_response(instruction_tx, receipt, calls_value="0x0", calls_type="STATICCALL")
         self.assert_response_contains_expected(expected_response, response)
    
     def test_callTracer_call_contract_from_contract_type_static_call_with_events(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.emitEventAndGetBalanceOfContractCalleeWithEvents(address_of_contractOne).build_transaction(tx)
+        instruction_tx = contractCaller.functions.emitEventAndGetBalanceOfContractCalleeWithEvents(address_of_contractOne).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         expected_response = self.fill_expected_response(instruction_tx, 
                                                         receipt, 
@@ -261,78 +208,46 @@ class TestDebugTraceTransactionCallTracer:
     
     def test_callTracer_call_contract_from_contract_type_call_with_events(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.lowLevelCallContractWithEvents(address_of_contractOne).build_transaction(tx)
+        instruction_tx = contractCaller.functions.lowLevelCallContractWithEvents(address_of_contractOne).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         expected_response = self.fill_expected_response(instruction_tx, receipt, calls_value="0x0", calls_type="STATICCALL")
         self.assert_response_contains_expected(expected_response, response)
 
     def test_callTracer_call_contract_from_contract_type_call(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.lowLevelCallContract(address_of_contractOne).build_transaction(tx)
+        instruction_tx = contractCaller.functions.lowLevelCallContract(address_of_contractOne).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         expected_response = self.fill_expected_response(instruction_tx, receipt, calls_value="0x0")
         self.assert_response_contains_expected(expected_response, response)
 
     def test_callTracer_call_contract_from_contract_type_delegate_call(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.setParamWithDelegateCall(address_of_contractOne, 9).build_transaction(tx)
+        instruction_tx = contractCaller.functions.setParamWithDelegateCall(address_of_contractOne, 9).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
         expected_response = self.fill_expected_response(instruction_tx, receipt, calls_value="0x0", calls_type="DELEGATECALL")
         self.assert_response_contains_expected(expected_response, response)
 
@@ -344,42 +259,22 @@ class TestDebugTraceTransactionCallTracer:
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
         
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
         expected_response = self.fill_expected_response(instruction_tx, receipt, calls_value="0x0", calls_type="CALLCODE")
         self.assert_response_contains_expected(expected_response, response)
 
     def test_callTracer_call_contract_with_zero_division(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.callNotSafeDivision(address_of_contractOne).build_transaction(tx)
+        instruction_tx = contractCaller.functions.callNotSafeDivision(address_of_contractOne).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         reason = f"division or modulo by zero"
         expected_response = self.fill_expected_response(instruction_tx, receipt, revert=True, revert_reason=reason, calls_value="0x0")
@@ -387,26 +282,15 @@ class TestDebugTraceTransactionCallTracer:
     
     def test_callTracer_call_contract_from_other_contract_revert_with_assert(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.callContactRevertWithAssertFalse(address_of_contractOne).build_transaction(tx)
+        instruction_tx = contractCaller.functions.callContactRevertWithAssertFalse(address_of_contractOne).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         address_to = instruction_tx["to"].lower()
         reason = f"Insufficient balance for transfer, account = {address_to}, chain = 111, required = 1"
@@ -415,26 +299,15 @@ class TestDebugTraceTransactionCallTracer:
 
     def test_callTracer_call_contract_from_other_contract_revert(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.callContactRevert(address_of_contractOne).build_transaction(tx)
+        instruction_tx = contractCaller.functions.callContactRevert(address_of_contractOne).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         address_to = instruction_tx["to"].lower()
         reason = f"Insufficient balance for transfer, account = {address_to}, chain = 111, required = 1"
@@ -443,32 +316,20 @@ class TestDebugTraceTransactionCallTracer:
     
     def test_callTracer_call_contract_from_other_contract_revert_with_require(self, caller_contract):
         sender_account = self.accounts[0]
-        contractTwo = caller_contract[0]
+        contractCaller = caller_contract[0]
         address_of_contractOne = caller_contract[1]
 
         tx = self.web3_client.make_raw_tx(from_=sender_account)
-        instruction_tx = contractTwo.functions.callContractRevertWithRequire(address_of_contractOne).build_transaction(tx)
+        instruction_tx = contractCaller.functions.callContractRevertWithRequire(address_of_contractOne).build_transaction(tx)
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
 
         address_to = instruction_tx["to"].lower()
         reason = f"Insufficient balance for transfer, account = {address_to}, chain = 111, required = 1"
         expected_response = self.fill_expected_response(instruction_tx, receipt, logs=True, revert=True, revert_reason=reason)
-        diff = DeepDiff(expected_response, response["result"])
-        assert ("dictionary_item_added" and "dictionary_item_removed") not in diff
+        self.assert_response_contains_expected(expected_response, response)
 
     def test_callTracer_call_to_precompiled_contract(self, eip1052_checker):
         expected_response = {}
@@ -480,18 +341,8 @@ class TestDebugTraceTransactionCallTracer:
         assert receipt["status"] == 1
         
         tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": False } }
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
-        )
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
+        
         expected_response["from"] = instruction_tx["from"].lower()
         expected_response["to"] = instruction_tx["to"].lower()
         expected_response["gasUsed"] =  hex(receipt["gasUsed"])
