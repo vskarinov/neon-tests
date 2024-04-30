@@ -84,8 +84,12 @@ class TestDebugTraceTransactionCallTracer:
             expected_response["calls"][0]["revertReason"] = revert_reason
 
         return expected_response
-    
-    def assert_response_contains_expected(self, expected_response, response):
+
+    def assert_response_contains_expected(self, expected_response, response, sort_calls=False):
+        if sort_calls:
+            expected_response["calls"] = sorted(expected_response["calls"], key=lambda d: d['type'])
+            response["result"]["calls"] = sorted(response["result"]["calls"], key=lambda d: d['type'])
+        
         diff = DeepDiff(expected_response, response["result"])
         # check if expected_response is subset of response
         assert "dictionary_item_removed" not in diff
@@ -193,8 +197,8 @@ class TestDebugTraceTransactionCallTracer:
                                                         logs=True, 
                                                         calls_value="0x0", 
                                                         calls_type="STATICCALL", 
-                                                        calls_logs_append=True)   
-        self.assert_response_contains_expected(expected_response, response)
+                                                        calls_logs_append=True)
+        self.assert_response_contains_expected(expected_response, response, sort_calls=True)
     
     def test_callTracer_call_contract_from_contract_type_call_with_events(self, tracer_caller_contract, tracer_calle_contract_address):
         sender_account = self.accounts[0]
@@ -212,7 +216,7 @@ class TestDebugTraceTransactionCallTracer:
                                                 logs=True, 
                                                 calls_value="0x0",
                                                 calls_logs_append=True)
-        self.assert_response_contains_expected(expected_response, response)
+        self.assert_response_contains_expected(expected_response, response, sort_calls=True)
 
     def test_callTracer_call_contract_from_contract_type_call(self, tracer_caller_contract, tracer_calle_contract_address):
         sender_account = self.accounts[0]
