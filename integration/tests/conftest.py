@@ -355,17 +355,21 @@ def event_caller_contract(web3_client, accounts) -> tp.Any:
     event_caller, _ = web3_client.deploy_and_get_contract("common/EventCaller", "0.8.12", accounts[0])
     yield event_caller
 
-@pytest.fixture(scope="class")
-def caller_contract(web3_client, accounts) -> tp.Any:
-    _, contract_deploy_tx = web3_client.deploy_and_get_contract(
-        "common/tracer/ContractCallee", "0.8.15", account=accounts[0]
-    )
-    address = contract_deploy_tx["contractAddress"]
 
+@pytest.fixture(scope="class")
+def tracer_caller_contract(web3_client, accounts) -> tp.Any:
     contract, _ = web3_client.deploy_and_get_contract(
         "common/tracer/ContractCaller", "0.8.15", account=accounts[0]
     )
-    yield contract, address
+    yield contract
+
+
+@pytest.fixture(scope="class")
+def tracer_calle_contract_address(web3_client, accounts) -> tp.Any:
+    _, contract_deploy_tx = web3_client.deploy_and_get_contract(
+        "common/tracer/ContractCallee", "0.8.15", account=accounts[0]
+    )
+    return contract_deploy_tx["contractAddress"]
 
 
 @pytest.fixture(scope="class")

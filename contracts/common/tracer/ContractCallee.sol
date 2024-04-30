@@ -15,26 +15,26 @@ contract ContractCallee {
         addressBalances[msg.sender] += msg.value;
     }
 
-    function setParam(uint256 _param) public payable {
+    function setParam(uint256 _param) public {
         parameter = _param;
         sender = msg.sender;
     }
 
-    function emitEvent() public payable {
+    function emitEvent() public {
         emit EventContractCallee("EmitEvent");
     }
 
-    function emitEventAssertFalse() public payable {
+    function emitEventAssertFalse() public {
         emit EventContractCallee("EmitEvent");
         assert(false);
     }
 
-    function emitEventRevertWithRequire() public payable {
+    function emitEventRevertWithRequire() public {
         emit EventContractCallee("EmitEvent");
-        require(!true);
+        require(!true, "require False");
     }
 
-    function emitEventRevert() public payable {
+    function emitEventRevert() public {
         emit EventContractCallee("EmitEvent");
         revert("Revert Contract");
     }
