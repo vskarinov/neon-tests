@@ -287,3 +287,19 @@ class TestMultiplyChains:
             for i, item in enumerate(chains.values()):
                 assert item["common_contract"].functions.getNumber().call() == numbers[i]
 
+    @pytest.mark.multipletokens
+    def test_send_non_neon_token_without_chain_id(self, account_with_all_tokens, web3_client_sol, sol_price, operator):
+        # for transactions with non neon token and without chain_id NeonEVM should raise wrong chain id error
+        # checks eip1820
+        acc2 = web3_client_sol.create_account()
+
+        instruction_tx = web3_client_sol.make_raw_tx(
+            account_with_all_tokens.address, acc2.address, web3.Web3.to_wei(0.1, "ether"), estimate_gas=True
+        )
+        instruction_tx.pop("chainId")
+
+        with pytest.raises(
+            ValueError,
+            match="wrong chain id",
+        ):
+            web3_client_sol.send_transaction(account_with_all_tokens, instruction_tx)
