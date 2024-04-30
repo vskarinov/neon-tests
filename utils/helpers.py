@@ -172,3 +172,15 @@ def bytes32_to_solana_pubkey(bytes32_data):
 def solana_pubkey_to_bytes32(solana_pubkey):
     byte_data = base58.b58decode(str(solana_pubkey))
     return byte_data
+
+def serialize_instruction(program_id, instruction) -> bytes:
+    program_id_bytes = solana_pubkey_to_bytes32(PublicKey(program_id))
+    serialized = program_id_bytes + len(instruction.keys).to_bytes(8, "little")
+
+    for key in instruction.keys:
+        serialized += bytes(key.pubkey)
+        serialized += key.is_signer.to_bytes(1, "little")
+        serialized += key.is_writable.to_bytes(1, "little")
+
+    serialized += len(instruction.data).to_bytes(8, "little") + instruction.data
+    return serialized

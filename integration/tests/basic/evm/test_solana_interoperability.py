@@ -10,7 +10,7 @@ from spl.token.constants import TOKEN_PROGRAM_ID
 
 from utils.accounts import EthAccounts
 from utils.consts import COUNTER_ID, TRANSFER_TOKENS_ID
-from utils.instructions import serialize_instruction
+from utils.helpers import serialize_instruction
 from utils.web3client import NeonChainWeb3Client
 
 
