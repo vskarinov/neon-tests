@@ -18,7 +18,6 @@ class TestERC20Transfer:
     web3_client: NeonChainWeb3Client
     accounts: EthAccounts
 
-    @pytest.mark.proxy_version("v1.12.0")
     @pytest.mark.parametrize("transfer_amount", [0, 1, 10])
     @pytest.mark.mainnet
     def test_send_erc20_token_from_one_account_to_another(self, erc20_simple, transfer_amount: tp.Union[int, float]):

@@ -25,7 +25,6 @@ NO_ENOUGH_GAS_PARAMS = [
 ]
 
 
-@pytest.mark.proxy_version("v1.12.0")
 @allure.feature("ERC Verifications")
 @allure.story("ERC20SPL: Tests for ERC20ForSPL contract")
 @pytest.mark.usefixtures("accounts", "web3_client", "sol_client")
@@ -434,7 +433,6 @@ class TestERC20SPL:
         assert user2_balance_after == user2_balance_before + claim_amount, "User2 balance is not correct"
 
 
-@pytest.mark.proxy_version("v1.12.0")
 @allure.feature("ERC Verifications")
 @allure.story("ERC20SPL: Tests for ERC20ForSPLMintable contract")
 @pytest.mark.usefixtures("accounts", "web3_client", "sol_client")
@@ -679,7 +677,6 @@ class TestERC20SPLMintable(TestERC20SPL):
         assert user2_balance_after == user2_balance_before + claim_amount, "User2 balance is not correct"
 
 
-@pytest.mark.proxy_version("v1.12.0")
 @allure.feature("ERC Verifications")
 @allure.story("ERC20SPL: Tests for multiple actions in one transaction")
 @pytest.mark.usefixtures("accounts", "web3_client", "sol_client")
@@ -992,7 +989,6 @@ def new_token_contract(web3_client, erc20_spl_mintable):
     return contract
 
 
-@pytest.mark.proxy_version("v1.12.0")
 @allure.feature("ERC Verifications")
 @allure.story("ERC20SPL: Tests for factory update")
 @pytest.mark.usefixtures("accounts", "web3_client", "sol_client")
