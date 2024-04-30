@@ -46,7 +46,7 @@ def pytest_collection_modifyitems(config, items):
         environments = json.load(f)
 
     if len(environments[network_name]["network_ids"]) == 1:
-        deselected_marks.append("multipletokens")    
+        deselected_marks.append("multipletokens")
 
     for item in items:
         if any([item.get_closest_marker(mark) for mark in deselected_marks]):
@@ -80,6 +80,7 @@ def sol_client(request, sol_client_session):
     if inspect.isclass(request.cls):
         request.cls.sol_client = sol_client_session
     yield sol_client_session
+
 
 @pytest.fixture(scope="session")
 def web3_client_sol(pytestconfig: Config) -> tp.Union[Web3Client, None]:
@@ -210,21 +211,19 @@ def erc20_spl(
 
 
 @pytest.fixture(scope="session")
-def erc20_simple(web3_client_session, 
-                 faucet, 
-                 accounts_session, 
-                 eth_bank_account
-):
-    erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0])
+def erc20_simple(web3_client_session, faucet, accounts_session, eth_bank_account):
+    erc20 = ERC20(
+        web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0]
+    )
     yield erc20
 
 
 @pytest.fixture(scope="session")
 def erc20_spl_mintable(
-    web3_client_session: NeonChainWeb3Client, 
-    faucet, 
-    sol_client_session, 
-    solana_account, 
+    web3_client_session: NeonChainWeb3Client,
+    faucet,
+    sol_client_session,
+    solana_account,
     accounts_session,
     eth_bank_account,
 ):
@@ -263,9 +262,11 @@ def class_account_sol_chain(
     )
     return account
 
+
 @pytest.fixture(scope="class")
 def evm_loader(pytestconfig):
     return EvmLoader(pytestconfig.environment.evm_loader, pytestconfig.environment.solana_url)
+
 
 @pytest.fixture(scope="class")
 def account_with_all_tokens(
