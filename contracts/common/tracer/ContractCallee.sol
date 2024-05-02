@@ -1,5 +1,18 @@
 pragma solidity >=0.8.0;
 
+
+contract SubcallContract {
+    address public contractAddress;
+
+    constructor() payable {
+        contractAddress = address(this);
+    }
+
+    function getValue() public pure returns (uint256) {
+        return 1;
+    }
+}
+
 contract ContractCallee {
     uint256 public parameter;
     address public sender;
@@ -45,5 +58,10 @@ contract ContractCallee {
 
     function notSafeDivision(uint256 number, uint256 divider) public pure returns (uint256) {
         return number / divider;
+    }
+
+    function getValue() public returns (uint256) {
+        SubcallContract _subcall = SubcallContract(address(new SubcallContract()));
+        return _subcall.getValue();
     }
 }

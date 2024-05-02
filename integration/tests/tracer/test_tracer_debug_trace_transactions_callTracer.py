@@ -166,6 +166,29 @@ class TestDebugTraceTransactionCallTracer:
             method="debug_traceTransaction", params=[receipt["transactionHash"].hex(), tracer_params]
         )
         assert "logs" not in response["result"]
+    
+    @pytest.mark.skip(reason="NDEV-2959")
+    def test_callTracer_onlyTopCall_check(self, tracer_caller_contract, tracer_calle_contract_address):
+        sender_account = self.accounts[0]
+
+        tx = self.web3_client.make_raw_tx(from_=sender_account)
+        instruction_tx = tracer_caller_contract.functions.emitEventAndGetValueContractCalleeWithEventsAndSubcall(
+            tracer_calle_contract_address).build_transaction(tx)
+        receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
+
+        tracer_params = { "tracer": "callTracer", "tracerConfig": { "OnlyTopCall": False } }
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
+        print(response["result"])
+        print()
+
+        assert len(response["result"]["calls"]) == 2
+        assert len(response["result"]["calls"][1]["calls"]) == 2
+        assert response["result"]["calls"][1]["calls"][0]["type"] == "CREATE"
+        assert response["result"]["calls"][1]["calls"][1]["type"] == "STATICCALL"
+
+        tracer_params = { "tracer": "callTracer", "tracerConfig": { "OnlyTopCall": True } }
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
+        assert "calls" not in response["result"]
 
     def test_callTracer_call_contract_from_contract_type_static_call(self, tracer_caller_contract, tracer_calle_contract_address):
         sender_account = self.accounts[0]
@@ -377,3 +400,24 @@ class TestDebugTraceTransactionCallTracer:
 
         expected_response = self.fill_expected_response(tx_obj, receipt, calls=False)
         self.assert_response_contains_expected(expected_response, response)
+
+    def test_callTracer_call_contract_with_event_from_other_one_with_two_events(self, tracer_caller_contract, tracer_calle_contract_address):
+        sender_account = self.accounts[0]
+
+        tx = self.web3_client.make_raw_tx(from_=sender_account)
+        instruction_tx = tracer_caller_contract.functions.emitAllEventsAndCallContractCalleeWithEvent(
+            tracer_calle_contract_address).build_transaction(tx)
+        receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
+
+        tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
+
+        #check if all topics from receipt logs are in response logs
+        log_topics = []
+        for log in receipt["logs"]:
+            log_topics.append(log["topics"][0].hex())
+        
+        for topic in log_topics:
+            assert topic in response["result"]["logs"][0]["topics"] \
+                or topic in response["result"]["logs"][1]["topics"] \
+                or topic in response["result"]["calls"][0]["logs"][0]["topics"]

@@ -15,6 +15,7 @@ contract ContractCaller {
     address public sender;
 
     event EventContractCaller(string text);
+    event AdditionalEventContractCaller(string text);
     function deposit() public payable {}
 
     function setParamWithDelegateCall(
@@ -91,10 +92,29 @@ contract ContractCaller {
         return balanceOfContractOne;
     }
 
+    function emitEventAndGetValueContractCalleeWithEventsAndSubcall(
+        address _contractCallee
+    ) public returns (uint256) {
+        emit EventContractCaller("Emit ContractCaller Event");
+        ContractCallee _callee = ContractCallee(_contractCallee);
+        _callee.emitEvent();
+        uint256 balanceOfContractOne = _callee.getValue();
+        return balanceOfContractOne;
+    }
+
     function emitEventAndCallContractCalleeWithEvent(
         address _contractCallee
     ) public {
         emit EventContractCaller("Emit ContractCaller Event");
+        ContractCallee _callee = ContractCallee(_contractCallee);
+        _callee.emitEvent();
+    }
+
+    function emitAllEventsAndCallContractCalleeWithEvent(
+        address _contractCallee
+    ) public {
+        emit EventContractCaller("Emit ContractCaller Event");
+        emit AdditionalEventContractCaller("Emit Additional ContractCaller Event");
         ContractCallee _callee = ContractCallee(_contractCallee);
         _callee.emitEvent();
     }
