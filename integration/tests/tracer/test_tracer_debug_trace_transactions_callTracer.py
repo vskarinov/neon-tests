@@ -421,3 +421,21 @@ class TestDebugTraceTransactionCallTracer:
             assert topic in response["result"]["logs"][0]["topics"] \
                 or topic in response["result"]["logs"][1]["topics"] \
                 or topic in response["result"]["calls"][0]["logs"][0]["topics"]
+
+    def test_callTracer_new_contract_and_event_from_constructor(self, tracer_caller_contract):
+        sender_account = self.accounts[0]
+
+        tx = self.web3_client.make_raw_tx(from_=sender_account)
+        instruction_tx = tracer_caller_contract.functions.callChildWithEventAndContractCreationInConstructor().build_transaction(tx)
+        receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
+
+        tracer_params = { "tracer": "callTracer", "tracerConfig": { "withLog": True } }
+        response = self.wait_for_trace_transaction_response_from_tracer(receipt, tracer_params)
+
+        assert len(response["result"]["calls"]) == 1
+        assert len(response["result"]["calls"][0]["calls"]) == 1
+        assert len(response["result"]["calls"][0]["logs"]) == 1
+        assert response["result"]["type"] == "CALL"
+        assert response["result"]["calls"][0]["type"] == "CREATE"
+        assert response["result"]["calls"][0]["calls"][0]["type"] == "CREATE"
+        assert response["result"]["calls"][0]["logs"][0]["topics"][0] == receipt["logs"][0]["topics"][0].hex()

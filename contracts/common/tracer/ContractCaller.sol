@@ -10,6 +10,16 @@ contract ChildContract {
     }
 }
 
+contract ChildContractWithNewContractInConstructor {
+    address public childAddr;
+    event EventChildContractWithNewContractInConstructor(string text);
+
+    constructor() {
+        emit EventChildContractWithNewContractInConstructor("Emit Child Contract Event");
+        childAddr = address(new ChildContract());
+    }
+}
+
 contract ContractCaller {
     uint256 public parameter;
     address public sender;
@@ -150,6 +160,11 @@ contract ContractCaller {
     function callTypeCreate2() public returns (address) {
         bytes32 salt = bytes32(0);
         address childContract = address(new ChildContract{salt: salt}());
+        return childContract;
+    }
+
+    function callChildWithEventAndContractCreationInConstructor() public returns (address) {
+        address childContract = address(new ChildContractWithNewContractInConstructor());
         return childContract;
     }
 }
