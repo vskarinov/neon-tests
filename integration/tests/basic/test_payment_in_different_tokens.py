@@ -123,6 +123,18 @@ class TestMultiplyChains:
         sol_balance_after = web3_client_sol.get_balance(alice)
         assert sol_balance_after < sol_balance_before
 
+    @pytest.mark.skip(reason="NDEV-2828")
+    @pytest.mark.multipletokens
+    def test_eip1820_sol_network(self, alice, bob, web3_client_sol):
+        neon_balance_before = self.web3_client.get_balance(alice)
+        sol_balance_before = web3_client_sol.get_balance(alice)
+        instruction_tx = self.web3_client.make_raw_tx(alice.address, bob.address, 1000000, estimate_gas=True)
+        instruction_tx.pop("chainId")
+        receipt = web3_client_sol.send_transaction(alice, instruction_tx)
+        assert receipt["status"] == 1
+        assert neon_balance_before > self.web3_client.get_balance(alice)
+        assert sol_balance_before == web3_client_sol.get_balance(alice)
+
     @pytest.mark.multipletokens
     def test_deploy_contract_with_sending_tokens(self, web3_client_sol, alice, check_neon_balance_does_not_changed):
         sol_alice_balance_before = web3_client_sol.get_balance(alice)
@@ -229,15 +241,15 @@ class TestMultiplyChains:
         alice,
         common_contract,
         web3_client_sol,
-        web3_client_abc,
-        web3_client_def,
+        web3_client_usdt,
+        web3_client_eth,
         class_account_sol_chain,
     ):
         chains = {
             "neon": {"client": self.web3_client},
             "sol": {"client": web3_client_sol},
-            "abc": {"client": web3_client_abc},
-            "def": {"client": web3_client_def},
+            "usdt": {"client": web3_client_usdt},
+            "eth": {"client": web3_client_eth},
         }
 
         make_nonce_the_biggest_for_chain(alice, self.web3_client, [item["client"] for item in chains.values()])
@@ -245,7 +257,6 @@ class TestMultiplyChains:
         bunch_contract_neon, _ = self.web3_client.deploy_and_get_contract(
             contract="common/Common", version="0.8.12", contract_name="BunchActions", account=alice
         )
-
         for chain in chains:
             bunch_contract = chains[chain]["client"].get_deployed_contract(
                 bunch_contract_neon.address, "common/Common", contract_name="BunchActions"
@@ -275,3 +286,20 @@ class TestMultiplyChains:
 
             for i, item in enumerate(chains.values()):
                 assert item["common_contract"].functions.getNumber().call() == numbers[i]
+
+    @pytest.mark.multipletokens
+    def test_send_non_neon_token_without_chain_id(self, account_with_all_tokens, web3_client_sol, sol_price, operator):
+        # for transactions with non neon token and without chain_id NeonEVM should raise wrong chain id error
+        # checks eip1820
+        acc2 = web3_client_sol.create_account()
+
+        instruction_tx = web3_client_sol.make_raw_tx(
+            account_with_all_tokens.address, acc2.address, web3.Web3.to_wei(0.1, "ether"), estimate_gas=True
+        )
+        instruction_tx.pop("chainId")
+
+        with pytest.raises(
+            ValueError,
+            match="wrong chain id",
+        ):
+            web3_client_sol.send_transaction(account_with_all_tokens, instruction_tx)

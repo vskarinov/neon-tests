@@ -10,7 +10,7 @@ from _pytest.config import Config
 from _pytest.runner import runtestprotocol
 from solana.keypair import Keypair
 
-from utils import create_allure_environment_opts
+from utils import create_allure_environment_opts, setup_logging
 from utils.faucet import Faucet
 from utils.accounts import EthAccounts
 from utils.web3client import NeonChainWeb3Client
@@ -40,7 +40,7 @@ class EnvironmentConfig:
 
 
 def pytest_addoption(parser):
-    parser.addoption("--network", action="store", default="local", help="Which stand use")
+    parser.addoption("--network", action="store", default="night-stand", help="Which stand use")
     parser.addoption(
         "--make-report",
         action="store_true",
@@ -79,22 +79,36 @@ def pytest_configure(config: Config):
         environments = json.load(f)
     assert network_name in environments, f"Environment {network_name} doesn't exist in envs.json"
     env = environments[network_name]
-    if network_name == "devnet":
+    if network_name in ["devnet", "tracer_ci"]:
         for solana_env_var in solana_url_env_vars:
             if solana_env_var in os.environ and os.environ[solana_env_var]:
                 env["solana_url"] = os.environ.get(solana_env_var)
                 break
         if "PROXY_URL" in os.environ and os.environ["PROXY_URL"]:
             env["proxy_url"] = os.environ.get("PROXY_URL")
+        if "DEVNET_FAUCET_URL" in os.environ and os.environ["DEVNET_FAUCET_URL"]:
+            env["faucet_url"] = os.environ.get("DEVNET_FAUCET_URL")
     if "use_bank" not in env:
         env["use_bank"] = False
     if "eth_bank_account" not in env:
         env["eth_bank_account"] = ""
+
+    # Set envs for integration/tests/neon_evm project
+    if "SOLANA_URL" not in os.environ or not os.environ["SOLANA_URL"]:
+        os.environ["SOLANA_URL"] = env["solana_url"]
+    if "EVM_LOADER" not in os.environ or not os.environ["EVM_LOADER"]:
+        os.environ["EVM_LOADER"] = env["evm_loader"]
+    if "NEON_TOKEN_MINT" not in os.environ or not os.environ["NEON_TOKEN_MINT"]:
+        os.environ["NEON_TOKEN_MINT"] = env["spl_neon_mint"]
+    if "CHAIN_ID" not in os.environ or not os.environ["CHAIN_ID"]:
+        os.environ["CHAIN_ID"]: env["network_ids"]["neon"]
+
     if network_name == "terraform":
         env["solana_url"] = env["solana_url"].replace("<solana_ip>", os.environ.get("SOLANA_IP"))
         env["proxy_url"] = env["proxy_url"].replace("<proxy_ip>", os.environ.get("PROXY_IP"))
         env["faucet_url"] = env["faucet_url"].replace("<proxy_ip>", os.environ.get("PROXY_IP"))
     config.environment = EnvironmentConfig(**env)
+    setup_logging()
 
 
 @pytest.fixture(scope="session")
@@ -114,8 +128,8 @@ def evm_loader_keypair():
 @pytest.fixture(scope="session", autouse=True)
 def allure_environment(pytestconfig: Config, web3_client_session: NeonChainWeb3Client):
     opts = {}
-
-    if pytestconfig.getoption("--network") != "geth" and "neon_evm" not in os.getenv("PYTEST_CURRENT_TEST"):
+    network_name = pytestconfig.getoption("--network")
+    if  network_name != "geth" and network_name != "mainnet" and "neon_evm" not in os.getenv("PYTEST_CURRENT_TEST"):
         opts = {
             "Network": pytestconfig.environment.proxy_url,
             "Proxy.Version": web3_client_session.get_proxy_version()["result"],
@@ -173,6 +187,6 @@ def faucet(pytestconfig: Config, web3_client_session) -> Faucet:
 
 
 @pytest.fixture(scope="session")
-def accounts_session(web3_client_session, faucet, eth_bank_account):
+def accounts_session(pytestconfig: Config, web3_client_session, faucet, eth_bank_account):
     accounts = EthAccounts(web3_client_session, faucet, eth_bank_account)
-    yield accounts
+    return accounts

@@ -27,7 +27,7 @@ class TestRpcGetBlockTransaction:
 
         if param is pow(2, 5):
             assert "error" not in response
-            assert response["result"] == "0x0", f"Invalid response: {response['result']}"
+            assert "result" in response and response["result"] == "0x0", f"Invalid response: {response['result']}"
             return
 
         assert "error" in response, "error field not in response"
@@ -43,6 +43,7 @@ class TestRpcGetBlockTransaction:
         assert code == Error32602.CODE, "wrong code"
         assert Error32602.BAD_BLOCK_HASH in message, "wrong message"
 
+    @pytest.mark.mainnet
     def test_eth_get_block_transaction_count_by_hash(self, json_rpc_client):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -69,6 +70,7 @@ class TestRpcGetBlockTransaction:
         assert "error" not in response
         assert rpc_checks.is_hex(response["result"]), f"Invalid response: {response['result']}"
 
+    @pytest.mark.mainnet
     @pytest.mark.parametrize("tag", [Tag.LATEST, Tag.EARLIEST, Tag.PENDING])
     def test_eth_get_block_transaction_count_by_number_tags(self, tag: Tag, json_rpc_client):
         response = json_rpc_client.send_rpc(method="eth_getBlockTransactionCountByNumber", params=tag.value)
@@ -76,6 +78,7 @@ class TestRpcGetBlockTransaction:
         result = response["result"]
         assert rpc_checks.is_hex(result), f"Invalid response: {result}"
 
+    @pytest.mark.mainnet
     def test_eth_get_block_transaction_count_by_number(self, json_rpc_client):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]

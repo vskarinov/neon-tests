@@ -41,19 +41,19 @@ class TestNeonRPCBaseCalls:
         assert_fields_are_hex(
             result,
             [
-                "gas_price",
-                "suggested_gas_price",
-                "min_acceptable_gas_price",
-                "min_executable_gas_price",
-                "min_wo_chainid_acceptable_gas_price",
-                "sol_price_usd",
-                "neon_price_usd",
-                "operator_fee",
-                "gas_price_slippage",
+                "gasPrice",
+                "suggestedGasPrice",
+                "minAcceptableGasPrice",
+                "minExecutableGasPrice",
+                "minWoChainIDAcceptableGasPrice",
+                "solPriceUsd",
+                "neonPriceUsd",
+                "operatorFee",
+                "gasPriceSlippage",
             ],
         )
-        assert_fields_are_specified_type(bool, result, ["is_const_gas_price", "allow_underpriced_tx_wo_chainid"])
-        gas_price = result["gas_price"]
+        assert_fields_are_specified_type(bool, result, ["isConstGasPrice", "allowUnderpricedTxWoChainID"])
+        gas_price = result["gasPrice"]
         assert int(gas_price, 16) > 100000000, f"gas price should be greater 100000000, got {int(gas_price, 16)}"
 
     def test_neon_cli_version(self, json_rpc_client):
@@ -73,6 +73,7 @@ class TestNeonRPCBaseCalls:
         sol_tx = response["result"][0]
         assert sol_client.wait_transaction(sol_tx) is not None
 
+    @pytest.mark.mainnet
     def test_neon_get_solana_transaction_by_neon_transaction_list_of_tx(self, json_rpc_client, sol_client):
         sender_account = self.accounts[0]
         _, tx_receipt = self.web3_client.deploy_and_get_contract("common/EventCaller", "0.8.12", sender_account)
@@ -80,7 +81,7 @@ class TestNeonRPCBaseCalls:
         response = json_rpc_client.send_rpc(method="neon_getSolanaTransactionByNeonTransaction", params=params)
         assert "result" in response
         result = response["result"]
-        assert len(result) == 5
+        assert len(result) == 6
         for tx in result:
             assert sol_client.wait_transaction(tx) is not None
 

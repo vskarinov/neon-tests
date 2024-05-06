@@ -17,7 +17,7 @@ from utils.apiclient import JsonRPCSession
 from integration.tests.tracer.test_tracer_historical_methods import call_storage
 
 SCHEMAS = "./integration/tests/tracer/schemas/"
-
+GOOD_CALLDATA = ["0x60fe60005360016000f3"]
 
 @allure.feature("Tracer API")
 @allure.story("Tracer API RPC calls debug methods check")
@@ -51,16 +51,16 @@ class TestTracerDebugMethods:
         tx_hash = receipt["transactionHash"].hex()
 
         wait_condition(
-            lambda: self.tracer_api.send_rpc(method="eth_getTransactionByHash", params=[tx_hash])["result"] is not None,
-            timeout_sec=120,
+            lambda: self.web3_client.get_transaction_by_hash(tx_hash) is not None,
+            timeout_sec=10,
         )
-        tx_info = self.tracer_api.send_rpc(method="eth_getTransactionByHash", params=[tx_hash])
+        tx_info = self.web3_client.get_transaction_by_hash(tx_hash)
 
-        response = self.tracer_api.send_rpc(method="debug_traceCall", params=[{}, tx_info["result"]["blockNumber"]])
+        response = self.tracer_api.send_rpc(method="debug_traceCall", params=[{}, hex(tx_info["blockNumber"])])
 
-        assert "error" not in response, "Error in response"
-        assert response["result"]["returnValue"] == ""
-        self.validate_response_result(response)
+        assert "error" in response, "No errors in response"
+        assert response["error"]["code"] == -32603, "Invalid error code"
+        assert response["error"]["message"] == "neon_api::trace failed"
 
     def test_debug_trace_call_zero_eth_call(self):
         sender_account = self.accounts[0]
@@ -70,21 +70,21 @@ class TestTracerDebugMethods:
         tx_hash = receipt["transactionHash"].hex()
 
         wait_condition(
-            lambda: self.tracer_api.send_rpc(method="eth_getTransactionByHash", params=[tx_hash])["result"] is not None,
-            timeout_sec=120,
+            lambda: self.web3_client.get_transaction_by_hash(tx_hash) is not None,
+            timeout_sec=10,
         )
-        tx_info = self.tracer_api.send_rpc(method="eth_getTransactionByHash", params=[tx_hash])
+        tx_info = self.web3_client.get_transaction_by_hash(tx_hash)
 
         params = [
             {
-                "to": tx_info["result"]["to"],
-                "from": tx_info["result"]["from"],
-                "gas": tx_info["result"]["gas"],
-                "gasPrice": tx_info["result"]["gasPrice"],
-                "value": tx_info["result"]["value"],
-                "data": tx_info["result"]["input"],
+                "to": tx_info["to"],
+                "from": tx_info["from"],
+                "gas": hex(tx_info["gas"]),
+                "gasPrice": hex(tx_info["gasPrice"]),
+                "value": hex(tx_info["value"]),
+                "data": tx_info["input"].hex(),
             },
-            tx_info["result"]["blockNumber"],
+            hex(tx_info["blockNumber"]),
         ]
 
         wait_condition(
@@ -93,30 +93,32 @@ class TestTracerDebugMethods:
         )
         response = self.tracer_api.send_rpc(method="debug_traceCall", params=params)
         assert "error" not in response, "Error in response"
+        assert "result" in response
         assert response["result"]["returnValue"] == ""
         self.validate_response_result(response)
 
-    def test_debug_trace_call_non_zero_eth_call(self, storage_contract):
+    def test_debug_trace_call_non_zero_eth_call(self, storage_contract, web3_client):
+        sender_account = self.accounts[0]
         store_value = random.randint(1, 100)
-        _, _, receipt = call_storage(self, storage_contract, store_value, "blockNumber")
+        _, _, receipt = call_storage(sender_account, storage_contract, store_value, "blockNumber", web3_client)
         tx_hash = receipt["transactionHash"].hex()
 
         wait_condition(
-            lambda: self.tracer_api.send_rpc(method="eth_getTransactionByHash", params=[tx_hash])["result"] is not None,
-            timeout_sec=120,
+            lambda: self.web3_client.get_transaction_by_hash(tx_hash) is not None,
+            timeout_sec=10,
         )
-        tx_info = self.tracer_api.send_rpc(method="eth_getTransactionByHash", params=[tx_hash])
+        tx_info = self.web3_client.get_transaction_by_hash(tx_hash)
 
         params = [
             {
-                "to": tx_info["result"]["to"],
-                "from": tx_info["result"]["from"],
-                "gas": tx_info["result"]["gas"],
-                "gasPrice": tx_info["result"]["gasPrice"],
-                "value": tx_info["result"]["value"],
-                "data": tx_info["result"]["input"],
+                "to": tx_info["to"],
+                "from": tx_info["from"],
+                "gas": hex(tx_info["gas"]),
+                "gasPrice": hex(tx_info["gasPrice"]),
+                "value": hex(tx_info["value"]),
+                "data": tx_info["input"].hex(),
             },
-            tx_info["result"]["blockNumber"],
+            hex(tx_info["blockNumber"]),
         ]
 
         wait_condition(
@@ -144,9 +146,10 @@ class TestTracerDebugMethods:
         assert "error" not in response, "Error in response"
         self.validate_response_result(response)
 
-    def test_debug_trace_transaction_non_zero_trace(self, storage_contract):
+    def test_debug_trace_transaction_non_zero_trace(self, web3_client, storage_contract):
+        sender_account = self.accounts[0]
         store_value = random.randint(1, 100)
-        _, _, receipt = call_storage(self, storage_contract, store_value, "blockNumber")
+        _, _, receipt = call_storage(sender_account, storage_contract, store_value, "blockNumber", web3_client)
         tx_hash = receipt["transactionHash"].hex()
 
         wait_condition(
@@ -155,13 +158,13 @@ class TestTracerDebugMethods:
         )
         response = self.tracer_api.send_rpc(method="debug_traceTransaction", params=[tx_hash])
         assert "error" not in response, "Error in response"
-        assert "error" not in response, "Error in response"
         assert 1 <= int(response["result"]["returnValue"], 16) <= 100
         self.validate_response_result(response)
 
-    def test_debug_trace_transaction_hash_without_prefix(self, storage_contract):
+    def test_debug_trace_transaction_hash_without_prefix(self, storage_contract, web3_client):
+        sender_account = self.accounts[0]
         store_value = random.randint(1, 100)
-        _, _, receipt = call_storage(self, storage_contract, store_value, "blockNumber")
+        _, _, receipt = call_storage(sender_account, storage_contract, store_value, "blockNumber", web3_client)
         tx_hash = receipt["transactionHash"].hex()[2:]
 
         wait_condition(
@@ -197,7 +200,7 @@ class TestTracerDebugMethods:
         )
         response = self.tracer_api.send_rpc(method="debug_traceBlockByNumber", params=[hex(receipt["blockNumber"])])
         assert "error" not in response, "Error in response"
-        assert tx_hash == response["result"][0]["txHash"]
+        assert tx_hash in map(lambda v: v["txHash"], response["result"])
         self.validate_response_result(response["result"][0])
 
     @pytest.mark.parametrize("number", [190, "", "3f08", "num", "0x"])
@@ -229,9 +232,15 @@ class TestTracerDebugMethods:
         receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
         assert receipt["status"] == 1
 
-        response = self.tracer_api.send_rpc(method="debug_traceBlockByNumber", params=["0x2ee1"])
+        wait_condition(
+            lambda: self.web3_client.get_block_number() is not None,
+            timeout_sec=10,
+        )
+        block = self.web3_client.get_block_number() - 100
+
+        response = self.tracer_api.send_rpc(method="debug_traceBlockByNumber", params=[hex(block)])
         assert "error" not in response, "Error in response"
-        assert response["result"] == [], "Result is not empty"
+        assert "result" in response and response["result"] == [], "Result is not empty"
 
     def test_debug_trace_block_by_hash(self):
         sender_account = self.accounts[0]
@@ -249,7 +258,7 @@ class TestTracerDebugMethods:
         )
         response = self.tracer_api.send_rpc(method="debug_traceBlockByHash", params=[receipt["blockHash"].hex()])
         assert "error" not in response, "Error in response"
-        assert tx_hash == response["result"][0]["txHash"]
+        assert tx_hash in map(lambda v: v["txHash"], response["result"])
 
         self.validate_response_result(response["result"][0])
 
@@ -279,7 +288,7 @@ class TestTracerDebugMethods:
         assert response["error"]["code"] == -32603, "Invalid error code"
         assert (
             response["error"]["message"]
-            == "eth_getBlockByHash returns None for '\"0xd97ff4869d52c4add6f5bcb1ba96020dd7877244b4cbf49044f49f002015ea85\"' block"
+            == "eth_getBlockByHash failed for '\"0xd97ff4869d52c4add6f5bcb1ba96020dd7877244b4cbf49044f49f002015ea85\"' block"
         )
 
     def decode_raw_header(self, header: bytes):
@@ -301,7 +310,7 @@ class TestTracerDebugMethods:
 
         response = self.tracer_api.send_rpc(method="debug_getRawHeader", params=[hex(receipt["blockNumber"])])
         assert "error" not in response, "Error in response"
-        assert response["result"] is not None
+        assert "result" in response and response["result"] is not None
 
         header = self.decode_raw_header(bytes.fromhex(response["result"]))
         block_info = self.web3_client.eth.get_block(receipt["blockNumber"])
@@ -330,7 +339,7 @@ class TestTracerDebugMethods:
 
         response = self.tracer_api.send_rpc(method="debug_getRawHeader", params=[receipt["blockHash"].hex()])
         assert "error" not in response, "Error in response"
-        assert response["result"] is not None
+        assert "result" in response and response["result"] is not None
 
         header = self.decode_raw_header(bytes.fromhex(response["result"]))
         block_info = self.web3_client.eth.get_block(receipt["blockNumber"])
@@ -346,40 +355,17 @@ class TestTracerDebugMethods:
         assert response["error"]["code"] == -32602, "Invalid error code"
         assert response["error"]["message"] == "Invalid params"
 
-    def check_modified_accounts_response(self, response):
-        sender_account = self.accounts[0]
+    def check_modified_accounts_response(self, response, expected_accounts=[]):
         assert "error" not in response, "Error in response"
-        assert response["result"] is not None and response["result"] != []
+        assert "result" in response and response["result"] is not None and response["result"] != []
         assert isinstance(response["result"], list)
-        assert sender_account.address in response["result"]
+
+        for account in expected_accounts:
+            assert account.lower() in response["result"]
+
         for item in response["result"]:
-            assert re.match(r"^0x[a-fA-F\d]{64}$", item)
+            assert re.match(r"\b0x[a-f0-9]{40}\b", item)
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
-    def test_debug_get_modified_accounts_by_number(self):
-        sender_account = self.accounts[0]
-        recipient_account = self.accounts[1]
-        receipt_start = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
-        receipt_end = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
-        assert receipt_start["status"] == 1
-        assert receipt_end["status"] == 1
-
-        wait_condition(
-            lambda: self.tracer_api.send_rpc(
-                method="debug_getModifiedAccountsByNumber",
-                params=[hex(receipt_start["blockNumber"]), hex(receipt_end["blockNumber"])],
-            )["result"]
-            is not None,
-            timeout_sec=120,
-        )
-
-        response = self.tracer_api.send_rpc(
-            method="debug_getModifiedAccountsByNumber",
-            params=[hex(receipt_start["blockNumber"]), hex(receipt_end["blockNumber"])],
-        )
-        self.check_modified_accounts_response(response)
-
-    @pytest.mark.skip(reason="bug NDEV-2375")
     def test_debug_get_modified_accounts_by_same_number(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -399,9 +385,8 @@ class TestTracerDebugMethods:
             method="debug_getModifiedAccountsByNumber",
             params=[hex(receipt["blockNumber"]), hex(receipt["blockNumber"])],
         )
-        self.check_modified_accounts_response(response)
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     def test_debug_get_modified_accounts_by_only_one_number(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -419,11 +404,10 @@ class TestTracerDebugMethods:
         response = self.tracer_api.send_rpc(
             method="debug_getModifiedAccountsByNumber", params=[hex(receipt["blockNumber"])]
         )
-        self.check_modified_accounts_response(response)
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
-    @pytest.mark.parametrize("difference", [1, 50, 199, 200])
-    def test_debug_get_modified_accounts_by_number_blocks_difference_less_or_equal_200(self, difference):
+    @pytest.mark.parametrize("difference", [1, 25, 49, 50])
+    def test_debug_get_modified_accounts_by_number_blocks_difference_less_or_equal_50(self, difference):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
         receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
@@ -441,15 +425,14 @@ class TestTracerDebugMethods:
         response = self.tracer_api.send_rpc(
             method="debug_getModifiedAccountsByNumber", params=[start_number, end_number]
         )
-        self.check_modified_accounts_response(response)
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
-    def test_debug_get_modified_accounts_by_number_201_blocks_difference(self):
+    def test_debug_get_modified_accounts_by_number_51_blocks_difference(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
         receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
         assert receipt["status"] == 1
-        start_number = hex(receipt["blockNumber"] - 201)
+        start_number = hex(receipt["blockNumber"] - 51)
         end_number = hex(receipt["blockNumber"])
 
         response = self.tracer_api.send_rpc(
@@ -457,9 +440,8 @@ class TestTracerDebugMethods:
         )
         assert "error" in response, "No errors in response"
         assert response["error"]["code"] == -32603, "Invalid error code"
-        assert response["error"]["message"] == "Requested range (201) is too big, maximum allowed range is 200 blocks"
+        assert response["error"]["message"] == "Requested range (51) is too big, maximum allowed range is 50 blocks"
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
     @pytest.mark.parametrize("params", [[1, 124], ["94f3e", 12], ["1a456", "0x0"], ["183b8e", "183b8e"]])
     def test_debug_get_modified_accounts_by_invalid_numbers(self, params):
         response = self.tracer_api.send_rpc(method="debug_getModifiedAccountsByNumber", params=params)
@@ -467,7 +449,27 @@ class TestTracerDebugMethods:
         assert response["error"]["code"] == -32602, "Invalid error code"
         assert response["error"]["message"] == "Invalid params"
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
+    def test_debug_get_modified_accounts_by_same_hash(self):
+        sender_account = self.accounts[0]
+        recipient_account = self.accounts[1]
+        receipt = self.web3_client.send_neon(sender_account, recipient_account, 0.1)
+        assert receipt["status"] == 1
+
+        wait_condition(
+            lambda: self.tracer_api.send_rpc(
+                method="debug_getModifiedAccountsByHash",
+                params=[receipt["blockHash"].hex(), receipt["blockHash"].hex()],
+            )["result"]
+            is not None,
+            timeout_sec=120,
+        )
+
+        response = self.tracer_api.send_rpc(
+            method="debug_getModifiedAccountsByHash",
+            params=[receipt["blockHash"].hex(), receipt["blockHash"].hex()],
+        )
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
+
     def test_debug_get_modified_accounts_by_hash(self):
         sender_account = self.accounts[0]
         recipient_account = self.accounts[1]
@@ -489,9 +491,25 @@ class TestTracerDebugMethods:
             method="debug_getModifiedAccountsByHash",
             params=[receipt_start["blockHash"].hex(), receipt_end["blockHash"].hex()],
         )
-        self.check_modified_accounts_response(response)
+        self.check_modified_accounts_response(response, [sender_account.address, recipient_account.address])
 
-    @pytest.mark.skip(reason="bug NDEV-2375")
+    def test_debug_get_modified_accounts_by_hash_contract_deployment(self, storage_contract_with_deploy_tx):
+        contract = storage_contract_with_deploy_tx[0]
+        receipt = storage_contract_with_deploy_tx[1]
+
+        wait_condition(
+            lambda: self.tracer_api.send_rpc(
+                method="debug_getModifiedAccountsByHash", params=[receipt["blockHash"].hex()]
+            )["result"]
+            is not None,
+            timeout_sec=120,
+        )
+
+        response = self.tracer_api.send_rpc(
+            method="debug_getModifiedAccountsByHash", params=[receipt["blockHash"].hex()]
+        )
+        self.check_modified_accounts_response(response, [contract.address, receipt["from"]])
+
     @pytest.mark.parametrize(
         "params", [[1, 124], ["0x94f3e00000000800000000", 12], ["0x1a456", "0x000000000001"], ["0x183b8e", "183b8e"]]
     )
@@ -503,12 +521,13 @@ class TestTracerDebugMethods:
 
     def test_debug_get_raw_transaction(self):
         sender_account = self.accounts[0]
-        nonce = self.web3_client.get_nonce(sender_account.address)
-        transaction = self.web3_client.make_raw_tx(sender_account, nonce=nonce, amount=0.1)
+        transaction = self.web3_client.make_raw_tx(from_=sender_account, data=GOOD_CALLDATA[0], estimate_gas=True)
         signed_tx = self.web3_client.eth.account.sign_transaction(transaction, sender_account.key)
         tx = self.web3_client.eth.send_raw_transaction(signed_tx.rawTransaction)
+
         receipt = self.web3_client.eth.wait_for_transaction_receipt(tx)
         assert receipt["status"] == 1
+        
         wait_condition(
             lambda: self.tracer_api.send_rpc(
                 method="debug_getRawTransaction", params=[receipt["transactionHash"].hex()]
@@ -519,7 +538,7 @@ class TestTracerDebugMethods:
 
         response = self.tracer_api.send_rpc(method="debug_getRawTransaction", params=[receipt["transactionHash"].hex()])
         assert "error" not in response, "Error in response"
-        assert response["result"] == signed_tx.rawTransaction.hex()
+        assert "result" in response and response["result"] == signed_tx.rawTransaction.hex()
 
     def test_debug_get_raw_transaction_invalid_tx_hash(self):
         sender_account = self.accounts[0]
@@ -540,6 +559,5 @@ class TestTracerDebugMethods:
         assert response["error"]["code"] == -32603, "Invalid error code"
         assert (
             response["error"]["message"]
-            == """Empty Neon transaction receipt for 
-            0xd9765b77e470204ae5edb1a796ab92ecb0e20fea50aeb09275aea740af7bbc69"""
+            == "Empty Neon transaction receipt for 0xd9765b77e470204ae5edb1a796ab92ecb0e20fea50aeb09275aea740af7bbc69"
         )

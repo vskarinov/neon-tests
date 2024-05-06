@@ -3,25 +3,35 @@ import pathlib
 import random
 import string
 import time
+import typing
 import typing as tp
 
-import web3
+
+import allure
+import base58
 import solcx
+import web3
 from eth_abi import abi
 from eth_utils import keccak
+from solana.publickey import PublicKey
+from solcx import link_code
 
 
+
+@allure.step("Get contract abi")
 def get_contract_abi(name, compiled):
     for key in compiled.keys():
         if name == key.rsplit(":")[-1]:
             return compiled[key]
 
 
+@allure.step("Get contract interface")
 def get_contract_interface(
     contract: str,
     version: str,
     contract_name: tp.Optional[str] = None,
     import_remapping: tp.Optional[dict] = None,
+    libraries: tp.Optional[dict] = None,
 ):
     if not contract.endswith(".sol"):
         contract += ".sol"
@@ -31,8 +41,7 @@ def get_contract_interface(
         else:
             contract_name = contract.rsplit(".", 1)[0]
 
-    if version not in [str(v) for v in solcx.get_installed_solc_versions()]:
-        solcx.install_solc(version)
+    solcx.install_solc(version)
     if contract.startswith("/"):
         contract_path = pathlib.Path(contract)
     else:
@@ -51,10 +60,13 @@ def get_contract_interface(
         optimize=True,
     )  # this allow_paths isn't very good...
     contract_interface = get_contract_abi(contract_name, compiled)
+    if libraries:
+        contract_interface["bin"] = link_code(contract_interface["bin"], libraries)
 
     return contract_interface
 
 
+@allure.step("Gen hash of block")
 def gen_hash_of_block(size: int) -> str:
     """Generates a block hash of the given size"""
     try:
@@ -67,6 +79,7 @@ def gen_hash_of_block(size: int) -> str:
         return gen_hash_of_block(size)
 
 
+@allure.step("Generate random text")
 def generate_text(min_len: int = 2, max_len: int = 200, simple: bool = True) -> str:
     length = random.randint(min_len, max_len)
     if simple:
@@ -76,6 +89,7 @@ def generate_text(min_len: int = 2, max_len: int = 200, simple: bool = True) -> 
     return "".join(random.choice(chars) for _i in range(length)).strip()
 
 
+@allure.step("Wait condition")
 def wait_condition(func_cond, timeout_sec=15, delay=0.5):
     start_time = time.time()
     while True:
@@ -91,6 +105,7 @@ def wait_condition(func_cond, timeout_sec=15, delay=0.5):
     return True
 
 
+@allure.step("Decode function signature")
 def decode_function_signature(function_name: str, args=None) -> str:
     data = keccak(text=function_name)[:4]
     if args is not None:
@@ -99,6 +114,7 @@ def decode_function_signature(function_name: str, args=None) -> str:
     return "0x" + data.hex()
 
 
+@allure.step("Get functions signatures with params as keccak256 from contract abi")
 def get_selectors(abi):
     """Get functions signatures with params as keccak256 from contract abi"""
     selectors = []
@@ -118,9 +134,53 @@ def get_selectors(abi):
     return selectors
 
 
+@allure.step("Create non-existing account address")
 def create_invalid_address(length=20) -> str:
     """Create non-existing account address"""
     address = gen_hash_of_block(length)
     while web3.Web3.is_checksum_address(address):
         address = gen_hash_of_block(length)
     return address
+
+
+
+def cryptohex(text: str):
+    return "0x" + keccak(text=text).hex()
+
+
+def int_to_hex(number: int):
+    return int(number).to_bytes(32, "big").hex()
+
+
+def hasattr_recursive(obj: typing.Any, attribute: str) -> bool:
+    attr = attribute.split(".")
+    temp_obj = obj
+    for a in attr:
+        if hasattr(temp_obj, a):
+            temp_obj = getattr(temp_obj, a)
+            continue
+        return False
+
+    return True
+
+def bytes32_to_solana_pubkey(bytes32_data):
+    byte_data = bytes.fromhex(bytes32_data)
+    base58_data = base58.b58encode(byte_data)
+    return PublicKey(base58_data.decode('utf-8'))
+
+
+def solana_pubkey_to_bytes32(solana_pubkey):
+    byte_data = base58.b58decode(str(solana_pubkey))
+    return byte_data
+
+def serialize_instruction(program_id, instruction) -> bytes:
+    program_id_bytes = solana_pubkey_to_bytes32(PublicKey(program_id))
+    serialized = program_id_bytes + len(instruction.keys).to_bytes(8, "little")
+
+    for key in instruction.keys:
+        serialized += bytes(key.pubkey)
+        serialized += key.is_signer.to_bytes(1, "little")
+        serialized += key.is_writable.to_bytes(1, "little")
+
+    serialized += len(instruction.data).to_bytes(8, "little") + instruction.data
+    return serialized
