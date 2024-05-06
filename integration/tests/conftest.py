@@ -39,13 +39,12 @@ def pytest_collection_modifyitems(config, items):
     settings = network_manager.get_network_object(network_name)
     web3_client = web3client.NeonChainWeb3Client(settings["proxy_url"])
 
-    proxy_dev = False
+
     raw_proxy_version = web3_client.get_proxy_version()["result"]
-    raw_proxy_version = "Neon-proxy/v1.11.2-53c743cff66d4f7ac3492443c51596fa42db854d"
     if "Neon-proxy/" in raw_proxy_version:
         raw_proxy_version = raw_proxy_version.split("Neon-proxy/")[1].strip()
-    if "dev" in raw_proxy_version:
-        proxy_dev = True
+    proxy_dev = "dev" in raw_proxy_version
+
     if "-" in raw_proxy_version:
         raw_proxy_version = raw_proxy_version.split("-")[0].strip()
     proxy_version = version.parse(raw_proxy_version)
@@ -149,6 +148,7 @@ def operator(pytestconfig: Config, web3_client_session: NeonChainWeb3Client) -> 
 
 @pytest.fixture(scope="session")
 def bank_account(pytestconfig: Config) -> tp.Optional[Keypair]:
+
     account = None
     if pytestconfig.environment.use_bank:
         if pytestconfig.getoption("--network") == "devnet":
@@ -173,6 +173,7 @@ def eth_bank_account(pytestconfig: Config, web3_client_session) -> tp.Optional[K
 @pytest.fixture(scope="session")
 def solana_account(bank_account, pytestconfig: Config, sol_client_session):
     account = Keypair.generate()
+
     if pytestconfig.environment.use_bank:
         sol_client_session.send_sol(bank_account, account.public_key, int(0.5 * LAMPORT_PER_SOL))
     else:
