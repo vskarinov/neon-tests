@@ -365,7 +365,7 @@ def tracer_caller_contract(web3_client, accounts) -> tp.Any:
 
 
 @pytest.fixture(scope="class")
-def tracer_calle_contract_address(web3_client, accounts) -> tp.Any:
+def tracer_callee_contract_address(web3_client, accounts) -> tp.Any:
     _, contract_deploy_tx = web3_client.deploy_and_get_contract(
         "common/tracer/ContractCallee", "0.8.15", account=accounts[0]
     )
