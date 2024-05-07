@@ -16,13 +16,13 @@ from solana.rpc import commitment
 from solana.rpc.types import TxOpts
 
 from utils.apiclient import JsonRPCSession
-from utils.consts import LAMPORT_PER_SOL, Unit, MULTITOKEN_MINTS
+from utils.consts import LAMPORT_PER_SOL, MULTITOKEN_MINTS
 from utils.erc20 import ERC20
 from utils.erc20wrapper import ERC20Wrapper
+from utils.evm_loader import EvmLoader
 from utils.operator import Operator
 from utils.web3client import NeonChainWeb3Client, Web3Client
 from utils.prices import get_sol_price, get_neon_price
-from utils.transfers_inter_networks import token_from_solana_to_neon_tx
 
 NEON_AIRDROP_AMOUNT = 1_000
 
@@ -46,7 +46,7 @@ def pytest_collection_modifyitems(config, items):
         environments = json.load(f)
 
     if len(environments[network_name]["network_ids"]) == 1:
-        deselected_marks.append("multipletokens")    
+        deselected_marks.append("multipletokens")
 
     for item in items:
         if any([item.get_closest_marker(mark) for mark in deselected_marks]):
@@ -211,21 +211,19 @@ def erc20_spl(
 
 
 @pytest.fixture(scope="session")
-def erc20_simple(web3_client_session, 
-                 faucet, 
-                 accounts_session, 
-                 eth_bank_account
-):
-    erc20 = ERC20(web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0])
+def erc20_simple(web3_client_session, faucet, accounts_session, eth_bank_account):
+    erc20 = ERC20(
+        web3_client=web3_client_session, faucet=faucet, bank_account=eth_bank_account, owner=accounts_session[0]
+    )
     yield erc20
 
 
 @pytest.fixture(scope="session")
 def erc20_spl_mintable(
-    web3_client_session: NeonChainWeb3Client, 
-    faucet, 
-    sol_client_session, 
-    solana_account, 
+    web3_client_session: NeonChainWeb3Client,
+    faucet,
+    sol_client_session,
+    solana_account,
     accounts_session,
     eth_bank_account,
 ):
@@ -245,37 +243,34 @@ def erc20_spl_mintable(
     yield erc20
 
 
-@pytest.fixture(scope="function")
-def new_account(web3_client_session, faucet, eth_bank_account):
-    account = web3_client_session.create_account_with_balance(faucet, bank_account=eth_bank_account)
-    yield account
-
-
 @pytest.fixture(scope="class")
 def class_account_sol_chain(
-    sol_client_session,
+    evm_loader,
     solana_account,
     web3_client,
     web3_client_sol,
-    pytestconfig,
     faucet,
     eth_bank_account,
 ):
     account = web3_client.create_account_with_balance(faucet, bank_account=eth_bank_account)
-    sol_client_session.request_airdrop(solana_account.public_key, 1 * LAMPORT_PER_SOL)
-    sol_client_session.deposit_wrapped_sol_from_solana_to_neon(
+    evm_loader.request_airdrop(solana_account.public_key, 1 * LAMPORT_PER_SOL)
+    evm_loader.deposit_wrapped_sol_from_solana_to_neon(
         solana_account,
         account,
         web3_client_sol.eth.chain_id,
-        pytestconfig.environment.evm_loader,
         1 * LAMPORT_PER_SOL,
     )
     return account
 
 
 @pytest.fixture(scope="class")
+def evm_loader(pytestconfig):
+    return EvmLoader(pytestconfig.environment.evm_loader, pytestconfig.environment.solana_url)
+
+
+@pytest.fixture(scope="class")
 def account_with_all_tokens(
-    sol_client_session,
+    evm_loader,
     solana_account,
     web3_client,
     web3_client_usdt,
@@ -290,12 +285,11 @@ def account_with_all_tokens(
 ):
     neon_account = web3_client.create_account_with_balance(faucet, bank_account=eth_bank_account, amount=500)
     if web3_client_sol:
-        sol_client_session.request_airdrop(solana_account.public_key, 1 * LAMPORT_PER_SOL)
-        sol_client_session.deposit_wrapped_sol_from_solana_to_neon(
+        evm_loader.request_airdrop(solana_account.public_key, 1 * LAMPORT_PER_SOL)
+        evm_loader.deposit_wrapped_sol_from_solana_to_neon(
             solana_account,
             neon_account,
             web3_client_sol.eth.chain_id,
-            pytestconfig.environment.evm_loader,
             1 * LAMPORT_PER_SOL,
         )
     for client in [web3_client_usdt, web3_client_eth]:
@@ -306,18 +300,15 @@ def account_with_all_tokens(
                 mint = MULTITOKEN_MINTS["ETH"]
             token_mint = PublicKey(mint)
 
-            sol_client_session.mint_spl_to(token_mint, solana_account, 1000000000000000)
+            evm_loader.mint_spl_to(token_mint, solana_account, 1000000000000000)
 
-            tx = token_from_solana_to_neon_tx(
-                sol_client_session,
+            evm_loader.sent_token_from_solana_to_neon(
                 solana_account,
                 token_mint,
                 neon_account,
                 100000000,
-                pytestconfig.environment.evm_loader,
                 client.eth.chain_id,
             )
-            sol_client_session.send_tx_and_check_status_ok(tx, solana_account)
     return neon_account
 
 
