@@ -30,3 +30,4 @@ Tests for check revert handling in different places
 | TestContractReverting::test_deploy_failed_contract_caller                       | Deploy contract with error in constructor using eth_call             |         |
 | TestContractReverting::test_deploy_failed_contract_tx_caller                    | Deploy contract with error in constructor using eth_estimateGas      |         |
 | TestContractReverting::test_deploy_failed_contract_tx_with_gas_caller           | Deploy contract with error in constructor via eth_sendRawTransaction |         |
+| TestContractReverting::test_contract_memory_overflow_call                       | Deploy contract with potential overflow expected success             |         |

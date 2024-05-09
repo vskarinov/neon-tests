@@ -210,3 +210,9 @@ class TestContractReverting:
         tx = self.web3_client.make_raw_tx(sender_account, gas=10000000)
         instruction_tx = revert_contract_caller.functions.deployContract().build_transaction(tx)
         assert self.web3_client.send_transaction(sender_account, instruction_tx)["status"] == 0
+
+    def test_contract_memory_overflow_call(self, accounts):
+        _, trx_id = self.web3_client.deploy_and_get_contract(
+            contract="common/Overflow", version="0.5.0", contract_name="TestDef", account=accounts[0]
+        )
+        assert trx_id["status"] == 1
