@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 
 UNISWAP_REPO_URL = "https://github.com/gigimon/Uniswap-V2-NEON.git"
 UNISWAP_TMP_DIR = "/tmp/uniswap-neon"
-MAX_UINT_256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+MAX_UINT_64 = 0xFFFFFFFFFFFFFFFF
 
 
 @events.test_start.add_listener
@@ -264,7 +264,7 @@ def deploy_uniswap_contracts(environment: "locust.env.Environment", **kwargs):
             if "SPL" in token:
                 c = token_contracts[token].contract
 
-            tr = c.functions.approve(uniswap2_router.address, MAX_UINT_256).build_transaction(
+            tr = c.functions.approve(uniswap2_router.address, MAX_UINT_64).build_transaction(
                 {
                     "from": eth_account.address,
                     "nonce": neon_client.eth.get_transaction_count(eth_account.address),
@@ -399,7 +399,7 @@ class SwapUser(User):
                 c = self.environment.uniswap["token_contracts"][token].contract
                 amount = web3.Web3.to_wei(10, "gwei")
             LOG.info(f"Approve token {token} for user {self.user.address}")
-            tr = c.functions.approve(self.environment.uniswap["router"].address, MAX_UINT_256).build_transaction(
+            tr = c.functions.approve(self.environment.uniswap["router"].address, MAX_UINT_64).build_transaction(
                 {
                     "from": self.user.address,
                     "nonce": self.neon_client.eth.get_transaction_count(self.user.address),
@@ -619,7 +619,7 @@ class SwapUser(User):
             0,
             [token1.address, token2.address, token3.address, token4.address, token5.address],
             self.user.address,
-            MAX_UINT_256,
+            MAX_UINT_64,
         ).build_transaction(
             {
                 "from": self.user.address,
