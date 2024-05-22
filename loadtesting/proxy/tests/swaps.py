@@ -139,6 +139,7 @@ def deploy_uniswap_contracts(environment: "locust.env.Environment", **kwargs):
 
         LOG.info("Deploy ERC20 tokens for Uniswap")
         for token in ("USDC", "USDT", "tokenA", "tokenB"):
+            LOG.info(f"Deploy token: {token}")
             erc_contract, _ = neon_client.deploy_and_get_contract(
                 "EIPs/ERC20/ERC20.sol",
                 account=eth_account,
@@ -172,14 +173,18 @@ def deploy_uniswap_contracts(environment: "locust.env.Environment", **kwargs):
 
     if "factory" in data and data["factory"]:
         uniswap2_factory = neon_client.get_deployed_contract(
-            data["factory"], str(uniswap_path / "contracts/v2-core/UniswapV2Factory.sol"), solc_version="0.5.16"
+            data["factory"], str(uniswap_path / "contracts/v2-core/UniswapV2Factory.sol"), solc_version="0.5.16",
+            contract_name="UniswapV2Factory"
         )
     else:
+
+
         uniswap2_factory, _ = neon_client.deploy_and_get_contract(
             str(uniswap_path / "contracts/v2-core/UniswapV2Factory.sol"),
             account=eth_account,
             version="0.5.16",
             constructor_args=[eth_account.address],
+            contract_name='UniswapV2Factory'
         )
     LOG.info(f"Factory address: {uniswap2_factory.address}")
 
@@ -190,6 +195,7 @@ def deploy_uniswap_contracts(environment: "locust.env.Environment", **kwargs):
             data["router"],
             str(uniswap_path / "contracts/v2-periphery/UniswapV2Router02.sol"),
             solc_version="0.6.6",
+            contract_name="UniswapV2Router02",
             import_remapping={"@uniswap": str(uniswap_path / "node_modules/@uniswap")},
         )
     else:
@@ -197,6 +203,7 @@ def deploy_uniswap_contracts(environment: "locust.env.Environment", **kwargs):
             str(uniswap_path / "contracts/v2-periphery/UniswapV2Router02.sol"),
             account=eth_account,
             version="0.6.6",
+            contract_name="UniswapV2Router02",
             import_remapping={"@uniswap": str(uniswap_path / "node_modules/@uniswap")},
             constructor_args=[uniswap2_factory.address, token_contracts["wNEON"].address],
         )
@@ -205,7 +212,7 @@ def deploy_uniswap_contracts(environment: "locust.env.Environment", **kwargs):
     LOG.info("Deploy Uniswap pairs")
 
     pair_contract_interface = helpers.get_contract_interface(
-        str(uniswap_path / "contracts/v2-core/UniswapV2Pair.sol"), version="0.5.16"
+        str(uniswap_path / "contracts/v2-core/UniswapV2Pair.sol"), version="0.5.16", contract_name="UniswapV2Pair"
     )
 
     if "pair_contracts" in data and data["pair_contracts"]:
