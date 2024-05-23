@@ -50,17 +50,13 @@ class TestTracerDebugMethods:
         assert receipt["status"] == 1
         tx_hash = receipt["transactionHash"].hex()
 
-        wait_condition(
-            lambda: self.web3_client.get_transaction_by_hash(tx_hash) is not None,
-            timeout_sec=10,
-        )
         tx_info = self.web3_client.get_transaction_by_hash(tx_hash)
 
-        response = self.tracer_api.send_rpc(method="debug_traceCall", params=[{}, hex(tx_info["blockNumber"])])
+        response = self.tracer_api.send_rpc_and_wait_response("debug_traceCall", [{}, hex(tx_info["blockNumber"])])
 
-        assert "error" in response, "No errors in response"
-        assert response["error"]["code"] == -32603, "Invalid error code"
-        assert response["error"]["message"] == "neon_api::trace failed"
+        assert "error" not in response, "Error in response"
+        assert response["result"]["failed"] == False
+        assert response["result"]["returnValue"] == ""
 
     def test_debug_trace_call_zero_eth_call(self):
         sender_account = self.accounts[0]
@@ -69,10 +65,6 @@ class TestTracerDebugMethods:
         assert receipt["status"] == 1
         tx_hash = receipt["transactionHash"].hex()
 
-        wait_condition(
-            lambda: self.web3_client.get_transaction_by_hash(tx_hash) is not None,
-            timeout_sec=10,
-        )
         tx_info = self.web3_client.get_transaction_by_hash(tx_hash)
 
         params = [
@@ -99,10 +91,6 @@ class TestTracerDebugMethods:
         _, _, receipt = call_storage(sender_account, storage_contract, store_value, "blockNumber", web3_client)
         tx_hash = receipt["transactionHash"].hex()
 
-        wait_condition(
-            lambda: self.web3_client.get_transaction_by_hash(tx_hash) is not None,
-            timeout_sec=10,
-        )
         tx_info = self.web3_client.get_transaction_by_hash(tx_hash)
 
         params = [
