@@ -292,7 +292,7 @@ class TestAccountRevision:
         check_transaction_logs_have_text(resp1, "exit_status=0x11")
         check_holder_account_tag(holder1, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
 
-        resp2 = send_transaction_steps(holder2, sender2) #the transaction was restarted
+        resp2 = send_transaction_steps(holder2, sender2)  # the transaction was restarted
         check_holder_account_tag(holder2, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
         check_transaction_logs_have_text(resp2, "exit_status=0x11")
 
@@ -352,15 +352,6 @@ class TestAccountRevision:
                 operator_keypair, treasury_pool.account, treasury_pool.buffer, signed_tx2, acc_from_emulation
             )
             check_transaction_logs_have_text(resp, "exit_status=0x11")
-        evm_loader.send_transaction_step_from_account(
-            operator_keypair,
-            operator_balance_pubkey,
-            treasury_pool,
-            holder_acc,
-            acc_from_emulation,
-            EVM_STEPS,
-            operator_keypair,
-        )
         resp = evm_loader.send_transaction_step_from_account(
             operator_keypair,
             operator_balance_pubkey,
@@ -370,6 +361,7 @@ class TestAccountRevision:
             EVM_STEPS,
             operator_keypair,
         )
+
         check_transaction_logs_have_text(resp, "exit_status=0x11")
         check_holder_account_tag(holder_acc, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
         for acc in data_accounts:
@@ -434,7 +426,7 @@ class TestAccountRevision:
 
         resp = evm_loader.send_transaction_step_from_account(
             operator_keypair, operator_balance_pubkey, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
-        ) #the transaction was restarted
+        )  # the transaction was restarted
         check_transaction_logs_have_text(resp, "exit_status=0x11")
 
         check_holder_account_tag(holder_acc, FINALIZED_STORAGE_ACCOUNT_INFO_LAYOUT, TAG_FINALIZED_STATE)
@@ -545,17 +537,20 @@ class TestAccountRevision:
             operator_keypair, operator_balance_pubkey, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
         )
         evm_loader.send_transaction_step_from_account(
-            operator_keypair, operator_balance_pubkey, evm_loader, treasury_pool, holder_acc, accounts, EVM_STEPS, operator_keypair
+            operator_keypair,
+            operator_balance_pubkey,
+            evm_loader,
+            treasury_pool,
+            holder_acc,
+            accounts,
+            EVM_STEPS,
+            operator_keypair,
         )
 
         signed_tx2 = make_contract_call_trx(evm_loader, sender_with_tokens, contract, "donateTenPercent()")
 
         resp = evm_loader.execute_trx_from_instruction(
-            operator_keypair,
-            treasury_pool.account,
-            treasury_pool.buffer,
-            signed_tx2,
-            accounts
+            operator_keypair, treasury_pool.account, treasury_pool.buffer, signed_tx2, accounts
         )
         check_transaction_logs_have_text(resp, "exit_status=0x11")
 
