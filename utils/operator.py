@@ -1,5 +1,8 @@
+import random
+import time
 import typing as tp
 
+import requests
 import solana.rpc.api
 from solana.publickey import PublicKey
 from solana.rpc.commitment import Confirmed
@@ -41,8 +44,19 @@ class Operator:
     def get_token_balance(self, w3_client=None):
         if w3_client is None:
             w3_client = self.web3
+        self.withdraw()
         balances = []
         if len(self._operator_neon_rewards_address) > 0:
             for addr in self._operator_neon_rewards_address:
                 balances.append(w3_client.get_balance(w3_client.to_checksum_address(addr.lower())))
         return sum(balances)
+
+    def withdraw(self):
+        url = "http://127.0.0.1:9102/api/v1/resource/withdrawEarnedTokens"
+        req_id = random.randint(1, 1000000)
+        print(f"Request id: {req_id}")
+        data = {"id":1,"data":{"req_id":{"ctx":req_id}}}
+        response = requests.post(url, json=data)
+        print(response)
+        print(response.json())
+

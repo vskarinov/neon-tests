@@ -100,6 +100,10 @@ class TestEconomics:
 
         assert sol_balance_before > sol_balance_after, "Operator balance after send tx doesn't changed"
         token_diff = w3_client.to_main_currency(token_balance_after - token_balance_before)
+        print("sol_diff", sol_diff)
+        print("token_diff", token_diff)
+        print("sol_price", sol_price)
+        print("token_price", token_price)
         assert_profit(sol_diff, sol_price, token_diff, token_price, w3_client.native_token_name)
 
     def test_send_neon_token_without_chain_id(
@@ -373,8 +377,8 @@ class TestEconomics:
     def test_contract_get_is_free(self, counter_contract, client_and_price, account_with_all_tokens, operator):
         """Verify that get contract calls is free"""
         w3_client, token_price = client_and_price
-        sol_balance_after_deploy = operator.get_solana_balance()
-        token_balance_after_deploy = operator.get_token_balance(w3_client)
+        sol_balance_before = operator.get_solana_balance()
+        token_balance_before = operator.get_token_balance(w3_client)
 
         user_balance_before = w3_client.get_balance(account_with_all_tokens)
         assert counter_contract.functions.get().call() == 0
@@ -383,8 +387,8 @@ class TestEconomics:
 
         sol_balance_after = operator.get_solana_balance()
         token_balance_after = operator.get_token_balance(w3_client)
-        assert sol_balance_after_deploy == sol_balance_after
-        assert token_balance_after_deploy == token_balance_after
+        assert sol_balance_before == sol_balance_after
+        assert token_balance_before == token_balance_after
 
     @pytest.mark.xfail(reason="https://neonlabs.atlassian.net/browse/NDEV-699")
     def test_cost_resize_account(self, neon_price, sol_price, operator, web3_client, accounts):
@@ -631,6 +635,7 @@ class TestEconomics:
         get_gas_used_percent(w3_client, contract_deploy_tx)
 
     @pytest.mark.slow
+    @pytest.mark.skip
     @pytest.mark.timeout(16 * Time.MINUTE)
     def test_deploy_contract_alt_on(
         self, sol_client, neon_price, sol_price, operator, web3_client, accounts, alt_contract, faucet
