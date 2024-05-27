@@ -9,10 +9,11 @@ from utils.accounts import EthAccounts
 from utils.web3client import NeonChainWeb3Client
 
 PRECOMPILED_FIXTURES = {
-    "modexp": {
-        "address": "0x0000000000000000000000000000000000000005",
-        "files": ["modexp.json", "modexp_eip2565.json"],
-    },
+    # 1.13.x version doesn't support modexp
+    # "modexp": {
+    #     "address": "0x0000000000000000000000000000000000000005",
+    #     "files": ["modexp.json", "modexp_eip2565.json"],
+    # },
     "ecAdd": {
         "address": "0x0000000000000000000000000000000000000006",
         "files": ["bn256Add.json"],
@@ -167,6 +168,5 @@ class TestPrecompiledContracts:
         receipt = self.web3_client.send_transaction(sender_account, instruction_tx)
 
         assert receipt["status"] == 1
-        pytestconfig.getoption("--network")
         if pytestconfig.getoption("--network") not in ["devnet", "night-stand"]:
             assert self.web3_client.get_balance(address) - balance_before == amount
