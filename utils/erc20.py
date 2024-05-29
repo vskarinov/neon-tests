@@ -1,4 +1,3 @@
-from debugpy._vendored.pydevd.tests_python.resources._debugger_case_matplotlib import processed
 from eth_account.signers.local import LocalAccount
 from _pytest.config import Config
 
