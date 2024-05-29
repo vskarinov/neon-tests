@@ -282,14 +282,14 @@ def class_account_sol_chain(
 ):
     account = web3_client.create_account_with_balance(faucet, bank_account=eth_bank_account)
     if pytestconfig.environment.use_bank:
-        evm_loader.send_sol(bank_account, solana_account.public_key, int(0.5 * LAMPORT_PER_SOL))
+        evm_loader.send_sol(bank_account, solana_account.public_key, int(1 * LAMPORT_PER_SOL))
     else:
         evm_loader.request_airdrop(solana_account.public_key, 1 * LAMPORT_PER_SOL)
     evm_loader.deposit_wrapped_sol_from_solana_to_neon(
         solana_account,
         account,
         web3_client_sol.eth.chain_id,
-        int(0.5 * LAMPORT_PER_SOL),
+        int(1 * LAMPORT_PER_SOL),
     )
     return account
 
@@ -319,14 +319,14 @@ def account_with_all_tokens(
     neon_account = web3_client.create_account_with_balance(faucet, bank_account=eth_bank_account, amount=500)
     if web3_client_sol:
         if pytestconfig.environment.use_bank:
-            evm_loader.send_sol(bank_account, solana_account.public_key, int(0.5 * LAMPORT_PER_SOL))
+            evm_loader.send_sol(bank_account, solana_account.public_key, int(1 * LAMPORT_PER_SOL))
         else:
             evm_loader.request_airdrop(solana_account.public_key, 1 * LAMPORT_PER_SOL)
         evm_loader.deposit_wrapped_sol_from_solana_to_neon(
             solana_account,
             neon_account,
             web3_client_sol.eth.chain_id,
-            int(0.5 * LAMPORT_PER_SOL),
+            int(1 * LAMPORT_PER_SOL),
         )
     for client in [web3_client_usdt, web3_client_eth]:
         if client:
