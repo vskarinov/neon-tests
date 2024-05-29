@@ -100,10 +100,6 @@ class TestEconomics:
 
         assert sol_balance_before > sol_balance_after, "Operator balance after send tx doesn't changed"
         token_diff = w3_client.to_main_currency(token_balance_after - token_balance_before)
-        print("sol_diff", sol_diff)
-        print("token_diff", token_diff)
-        print("sol_price", sol_price)
-        print("token_price", token_price)
         assert_profit(sol_diff, sol_price, token_diff, token_price, w3_client.native_token_name)
 
     def test_send_neon_token_without_chain_id(
@@ -458,9 +454,10 @@ class TestEconomics:
         token_balance_before = operator.get_token_balance(w3_client)
         tx = w3_client.make_raw_tx(account_with_all_tokens.address)
 
-        instruction_tx = counter_contract.functions.moreInstruction(0, 1500).build_transaction(tx)
+        instruction_tx = counter_contract.functions.moreInstruction(0, 3000).build_transaction(tx)
 
         instruction_receipt = w3_client.send_transaction(account_with_all_tokens, instruction_tx)
+
         wait_condition(lambda: sol_balance_before > operator.get_solana_balance())
 
         sol_balance_after = operator.get_solana_balance()
