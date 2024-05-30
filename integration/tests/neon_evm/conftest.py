@@ -61,7 +61,7 @@ def operator_keypair(worker_id, evm_loader) -> Keypair:
         key_file = pathlib.Path(f"{OPERATOR_KEYPAIR_PATH}/id.json")
     else:
         file_id = int(worker_id[-1]) + 2
-        key_file = OPERATOR_KEYPAIR_PATH / f"id{file_id}.json"
+        key_file = pathlib.Path(f"{OPERATOR_KEYPAIR_PATH}/id{file_id}.json")
     return prepare_operator(key_file, evm_loader)
 
 
