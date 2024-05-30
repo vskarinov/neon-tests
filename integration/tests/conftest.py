@@ -15,6 +15,7 @@ from solana.keypair import Keypair
 from solana.publickey import PublicKey
 from solana.rpc import commitment
 from solana.rpc.types import TxOpts
+from web3.exceptions import InvalidAddress
 
 from clickfile import network_manager
 from utils import web3client
@@ -36,10 +37,14 @@ def pytest_collection_modifyitems(config, items):
     deselected_marks = []
     network_name = config.getoption("--network")
 
+    if network_name == "geth":
+        return
+
     settings = network_manager.get_network_object(network_name)
     web3_client = web3client.NeonChainWeb3Client(settings["proxy_url"])
 
     raw_proxy_version = web3_client.get_proxy_version()["result"]
+
     if "Neon-proxy/" in raw_proxy_version:
         raw_proxy_version = raw_proxy_version.split("Neon-proxy/")[1].strip()
     proxy_dev = "dev" in raw_proxy_version
