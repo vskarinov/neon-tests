@@ -8,6 +8,7 @@ import time
 import typing as tp
 
 import allure
+import base58
 import pytest
 from _pytest.config import Config
 from packaging import version
