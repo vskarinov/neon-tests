@@ -3,6 +3,7 @@ import random
 import base58
 import pytest
 from solana.publickey import PublicKey
+from solana.rpc.commitment import Confirmed
 from web3.contract import Contract
 from solana.keypair import Keypair
 
@@ -142,7 +143,7 @@ class TestQueryAccountLib:
         assert actual_lamports_before == expected_lamports_before
 
         additional_lamports = random.randint(0, 1000)
-        sol_client_session.request_airdrop(pubkey=new_solana_account.public_key, lamports=additional_lamports)
+        sol_client_session.request_airdrop(pubkey=new_solana_account.public_key, lamports=additional_lamports, commitment=Confirmed)
         expected_lamports_after = expected_lamports_before + additional_lamports
 
         success, actual_lamports_after = query_account_caller_contract.functions.queryLamports(
