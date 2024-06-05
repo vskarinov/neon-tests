@@ -38,7 +38,6 @@ class TestRpcGetLogs:
         "address",
         "logIndex",
         "data",
-        "transactionLogIndex",
     ]
     ETH_BOOL_FIELDS = ["removed"]
     NEON_HASH_FIELDS = ["solanaTransactionSignature"]
