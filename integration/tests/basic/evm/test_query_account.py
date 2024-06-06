@@ -15,7 +15,7 @@ from utils.web3client import NeonChainWeb3Client
 
 class TestQueryAccountLib:
     # ---------------------------------------- owner ----------------------------------------
-    async def test_owner_positive(
+    def test_owner_positive(
         self,
         query_account_caller_contract: Contract,
         solana_account: Keypair,
@@ -37,7 +37,7 @@ class TestQueryAccountLib:
         assert success is True
         assert actual_owner_address == expected_owner_address
 
-    async def test_owner_through_transaction_positive(
+    def test_owner_through_transaction_positive(
             self,
             accounts: EthAccounts,
             sol_client_session: SolanaClient,
@@ -69,7 +69,7 @@ class TestQueryAccountLib:
         assert success is True
         assert actual_owner_address == expected_owner_address
 
-    async def test_owner_negative_address_max_int(
+    def test_owner_negative_address_max_int(
         self,
         query_account_caller_contract: Contract,
         max_non_existent_solana_address: int,
@@ -82,7 +82,7 @@ class TestQueryAccountLib:
         assert actual_owner_address == 0
 
     # ---------------------------------------- length ----------------------------------------
-    async def test_length_positive(
+    def test_length_positive(
         self,
         query_account_caller_contract: Contract,
         solana_account: Keypair,
@@ -104,7 +104,7 @@ class TestQueryAccountLib:
         assert success is True
         assert actual_length == expected_length
 
-    async def test_length_negative_address_max_int(
+    def test_length_negative_address_max_int(
         self,
         query_account_caller_contract: Contract,
         max_non_existent_solana_address: int,
@@ -117,7 +117,7 @@ class TestQueryAccountLib:
         assert actual_owner_address == 0
 
     # ---------------------------------------- lamports ----------------------------------------
-    async def test_lamports_positive(
+    def test_lamports_positive(
         self,
         query_account_caller_contract: Contract,
         solana_account: Keypair,
@@ -153,7 +153,7 @@ class TestQueryAccountLib:
         assert success is True
         assert actual_lamports_after == expected_lamports_after
 
-    async def test_lamports_negative_address_max_int(
+    def test_lamports_negative_address_max_int(
         self,
         query_account_caller_contract: Contract,
         max_non_existent_solana_address: int,
@@ -166,7 +166,7 @@ class TestQueryAccountLib:
         assert actual_owner_address == 0
 
     # ---------------------------------------- executable ----------------------------------------
-    async def test_executable_true(
+    def test_executable_true(
         self,
         request: pytest.FixtureRequest,
         query_account_caller_contract: Contract,
@@ -183,7 +183,7 @@ class TestQueryAccountLib:
         assert success is True
         assert is_executable is True
 
-    async def test_executable_false(
+    def test_executable_false(
         self,
         query_account_caller_contract: Contract,
         solana_account: Keypair,
@@ -198,7 +198,7 @@ class TestQueryAccountLib:
         assert success is True
         assert is_executable is False
 
-    async def test_executable_negative_address_max_int(
+    def test_executable_negative_address_max_int(
         self,
         query_account_caller_contract: Contract,
         max_non_existent_solana_address: int,
@@ -211,7 +211,7 @@ class TestQueryAccountLib:
         assert actual_owner_address == 0
 
     # ---------------------------------------- rent epoch ----------------------------------------
-    async def test_rent_epoch_positive(
+    def test_rent_epoch_positive(
         self,
         solana_account: Keypair,
         query_account_caller_contract: Contract,
@@ -232,7 +232,7 @@ class TestQueryAccountLib:
         rent_epoch_expected = account_info.value.rent_epoch
         assert rent_epoch_actual == rent_epoch_expected
 
-    async def test_rent_epoch_negative_address_max_int(
+    def test_rent_epoch_negative_address_max_int(
         self,
         query_account_caller_contract: Contract,
         max_non_existent_solana_address: int,
@@ -245,7 +245,7 @@ class TestQueryAccountLib:
         assert actual_rent_epoch == 0
 
     # ---------------------------------------- data ----------------------------------------
-    async def test_data_positive(
+    def test_data_positive(
         self,
         request: pytest.FixtureRequest,
         query_account_caller_contract: Contract,
@@ -271,7 +271,7 @@ class TestQueryAccountLib:
         expected_data = account_info.value.data
         assert actual_data == expected_data
 
-    async def test_data_through_transaction_positive(
+    def test_data_through_transaction_positive(
             self,
             request: pytest.FixtureRequest,
             query_account_caller_contract: Contract,
@@ -307,7 +307,7 @@ class TestQueryAccountLib:
         assert success is True
         assert actual_data == expected_data
 
-    async def test_data_negative_address_max_int(
+    def test_data_negative_address_max_int(
         self,
         query_account_caller_contract: Contract,
         max_non_existent_solana_address: int,
@@ -321,7 +321,7 @@ class TestQueryAccountLib:
         assert success is False
         assert "out of bounds" in data.decode("utf-8", errors="ignore").lower()
 
-    async def test_data_negative_invalid_offset(
+    def test_data_negative_invalid_offset(
         self,
         request: pytest.FixtureRequest,
         query_account_caller_contract: Contract,
@@ -342,7 +342,7 @@ class TestQueryAccountLib:
         assert success is False
         assert "out of bounds" in data.decode("utf-8", errors="ignore").lower()
 
-    async def test_data_negative_length_zero(
+    def test_data_negative_length_zero(
         self,
         request: pytest.FixtureRequest,
         query_account_caller_contract: Contract,
@@ -364,7 +364,7 @@ class TestQueryAccountLib:
         actual_length = int(length_bytes.decode().rstrip("\x00"))
         assert actual_length == 0
 
-    async def test_data_negative_invalid_length(
+    def test_data_negative_invalid_length(
         self,
         request: pytest.FixtureRequest,
         query_account_caller_contract: Contract,
