@@ -15,6 +15,8 @@ markers = [
     "multipletokens: this tests works only on stands with several chains",
     "slow: this tests is slow and should be run separately",
     "proxy_version(version): this tests works only on specified proxy version and all the following higher versions",
+    "bug: skipped because bug",
+    "neon_only: this test can be run only on neon network"
 ]
 asyncio_mode = "auto"
 addopts = "--alluredir=allure-results"
