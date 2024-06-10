@@ -14,7 +14,6 @@ from utils.helpers import serialize_instruction, bytes32_to_solana_pubkey
 from utils.web3client import NeonChainWeb3Client
 
 
-@pytest.mark.xfail(reason="To investigate")
 @pytest.mark.proxy_version("v1.12.0")
 @allure.feature("EVM tests")
 @allure.story("Verify precompiled solana call contract")
