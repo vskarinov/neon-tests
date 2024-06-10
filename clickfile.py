@@ -343,19 +343,21 @@ def print_oz_balances():
     print(green("\nOZ tests suite profitability:"))
     print(yellow(report))
 
+
 def wait_for_tracer_service(network: str):
     settings = network_manager.get_network_object(network)
     web3_client = web3client.NeonChainWeb3Client(proxy_url=settings["proxy_url"])
     tracer_api = JsonRPCSession(settings["tracer_url"])
 
     block = web3_client.get_block_number()
-    
+
     wait_condition(
-    lambda: (tracer_api.send_rpc(method="get_neon_revision", params=block)["result"]["neon_revision"]) is not None,
-    timeout_sec=180,
+        lambda: (tracer_api.send_rpc(method="get_neon_revision", params=block)["result"]["neon_revision"]) is not None,
+        timeout_sec=180,
     )
 
     return True
+
 
 def generate_allure_environment(network_name: str):
     network = network_manager.get_network_object(network_name)
@@ -515,7 +517,7 @@ def update_contracts(branch):
 @click.option("-p", "--numprocesses", help="Number of parallel jobs for basic tests")
 @click.option("-a", "--amount", default=20000, help="Requested amount from faucet")
 @click.option("-u", "--users", default=8, help="Accounts numbers used in OZ tests")
-@click.option("-c", "--case", default='', type=str, help="Specific test case name pattern to run")
+@click.option("-c", "--case", default="", type=str, help="Specific test case name pattern to run")
 @click.option(
     "--ui-item",
     default="all",
@@ -542,7 +544,7 @@ def run(name, jobs, numprocesses, ui_item, amount, users, network, case):
         else:
             command = "py.test integration/tests/basic"
         if numprocesses:
-            command = f"{command} --numprocesses {numprocesses} --dist loadgroup"
+            command = f"{command} --numprocesses {numprocesses} --dist loadscope"
     elif name == "tracer":
         command = "py.test -n 5 integration/tests/tracer"
     elif name == "services":
@@ -574,9 +576,9 @@ def run(name, jobs, numprocesses, ui_item, amount, users, network, case):
     if name == "tracer":
         assert wait_for_tracer_service(network)
 
-    if case != '':
+    if case != "":
         command += " -vk {}".format(case)
-        
+
     command += f" -s --network={network} --make-report"
     cmd = subprocess.run(command, shell=True)
     if name != "ui":
@@ -884,12 +886,7 @@ def send_notification(url, build_url, traceback, network):
 @click.option("-n", "--network", default="night-stand", type=str, help="In which stand run tests")
 def get_operator_balances(network: str):
     net = network_manager.get_network_object(network)
-    operator = Operator(
-        net["proxy_url"],
-        net["solana_url"],
-        net["spl_neon_mint"],
-        evm_loader=net["evm_loader"]
-    )
+    operator = Operator(net["proxy_url"], net["solana_url"], net["spl_neon_mint"], evm_loader=net["evm_loader"])
     neon_balance = operator.get_token_balance()
     sol_balance = operator.get_solana_balance()
     print(
@@ -931,7 +928,6 @@ def deploy(current_branch, head_branch, base_branch, use_real_price):
         faucet_tag = (
             version_branch if is_branch_exist(FAUCET_GITHUB_URL, version_branch) and not faucet_tag else faucet_tag
         )
-
 
     proxy_tag = "latest" if not proxy_tag else proxy_tag
     evm_tag = "latest" if not evm_tag else evm_tag
