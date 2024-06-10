@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.7.0 <0.9.0;
 pragma abicoder v2;
 
@@ -22,10 +23,18 @@ contract CallSolanaCaller {
     }
 
     function execute(uint64 lamports, bytes calldata instruction) public {
-        bytes32 returnData = bytes32(_callSolana.execute(lamports, instruction));
-        emit LogBytes(returnData);
+        bytes memory returnData = _callSolana.execute(lamports, instruction);
+    
+        require(returnData.length >= 32, "Return data too short");
 
-    }
+        bytes32 returnDataBytes32;
+        assembly {
+            returnDataBytes32 := mload(add(returnData, 32))
+        }
+
+        emit LogBytes(returnDataBytes32);
+
+        }
 
     function execute_with_get_return_data(uint64 lamports, bytes calldata instruction) public {
         _callSolana.execute(lamports, instruction);
@@ -67,8 +76,16 @@ contract CallSolanaCaller {
     }
 
     function executeWithSeed(uint64 lamports, bytes32 salt, bytes calldata instruction) public {
-        bytes32 returnData = bytes32(_callSolana.executeWithSeed(lamports, salt, instruction));
-        emit LogBytes(returnData);
+        bytes memory returnData = _callSolana.executeWithSeed(lamports, salt, instruction);
+    
+        require(returnData.length >= 32, "Return data too short");
+
+        bytes32 returnDataBytes32;
+        assembly {
+            returnDataBytes32 := mload(add(returnData, 32))
+        }
+
+        emit LogBytes(returnDataBytes32);
     }
 
     function getReturnData() public returns (bytes32, bytes memory){
