@@ -110,3 +110,25 @@ class TestNeonRPCBaseCalls:
         )
         assert "error" not in response
         assert len(response["result"]) == 0, "expected empty result for non existent transaction request"
+
+    def test_neon_get_native_token_list(self, pytestconfig, json_rpc_client):
+        response = json_rpc_client.send_rpc(method="neon_getNativeTokenList")
+        assert "error" not in response
+        assert len(response["result"]) == len(pytestconfig.environment.network_ids), \
+            f"Wrong list length. Initial -> {pytestconfig.environment.network_ids}. Actual -> {response['result']}"
+        # Check that all fields are present
+        for item in response["result"]:
+            assert "tokenChainId" in item
+            assert item["tokenChainId"] is not None
+            assert "tokenMint" in item
+            assert item["tokenMint"] is not None
+            assert "tokenName" in item
+            assert item["tokenName"] is not None
+        
+        # Check that NEON token is present in the list
+        tokens = [item["tokenName"] for item in response["result"]]
+        assert "NEON" in tokens, f"NEON token is not in the list: {tokens}"
+        for item in response["result"]:
+            if item["tokenName"] == "NEON":
+                assert item["tokenMint"] == pytestconfig.environment.spl_neon_mint
+                assert item["tokenChainId"] == hex(pytestconfig.environment.network_ids["neon"])
