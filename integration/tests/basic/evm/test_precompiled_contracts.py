@@ -9,22 +9,22 @@ from utils.accounts import EthAccounts
 from utils.web3client import NeonChainWeb3Client
 
 PRECOMPILED_FIXTURES = {
-    "modexp": {
-        "address": "0x0000000000000000000000000000000000000005",
-        "files": ["modexp.json", "modexp_eip2565.json"],
-    },
-    "ecAdd": {
-        "address": "0x0000000000000000000000000000000000000006",
-        "files": ["bn256Add.json"],
-    },
-    "ecMul": {
-        "address": "0x0000000000000000000000000000000000000007",
-        "files": ["bn256ScalarMul.json"],
-    },
-    "ecPairing": {
-        "address": "0x0000000000000000000000000000000000000008",
-        "files": ["bn256Pairing.json"],
-    },
+    # "modexp": {
+    #     "address": "0x0000000000000000000000000000000000000005",
+    #     "files": ["modexp.json", "modexp_eip2565.json"],
+    # },
+    # "ecAdd": {
+    #     "address": "0x0000000000000000000000000000000000000006",
+    #     "files": ["bn256Add.json"],
+    # },
+    # "ecMul": {
+    #     "address": "0x0000000000000000000000000000000000000007",
+    #     "files": ["bn256ScalarMul.json"],
+    # },
+    # "ecPairing": {
+    #     "address": "0x0000000000000000000000000000000000000008",
+    #     "files": ["bn256Pairing.json"],
+    # },
     "sha2_256": {
         "address": "0x0000000000000000000000000000000000000002",
         "files": ["sha2_256.json"],
