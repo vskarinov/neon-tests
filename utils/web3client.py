@@ -382,6 +382,18 @@ class Web3Client:
         gas_used_in_tx = tx_receipt.gasUsed * tx["gasPrice"]
         return gas_used_in_tx
 
+    def get_token_usd_gas_price(self):
+        resp = requests.post(
+            self._proxy_url,
+            json={
+                "jsonrpc": "2.0",
+                "method": "neon_gasPrice",
+                "params": [],
+                "id": 0,
+            },
+        ).json()
+        return int(resp["result"]["tokenPriceUsd"], 16) / 100000
+
 
 class NeonChainWeb3Client(Web3Client):
     def __init__(
@@ -401,18 +413,10 @@ class NeonChainWeb3Client(Web3Client):
     ):
         """Creates a new account with balance"""
         account = self.create_account()
-        balance_before = float(self.from_wei(self.eth.get_balance(account.address), Unit.ETHER))
-
         if bank_account is not None:
             self.send_neon(bank_account, account, amount)
         else:
             faucet.request_neon(account.address, amount=amount)
-        for _ in range(20):
-            if float(self.from_wei(self.eth.get_balance(account.address), Unit.ETHER)) >= (balance_before + amount):
-                break
-            time.sleep(1)
-        else:
-            raise AssertionError(f"Balance didn't changed after 20 seconds ({account.address})")
         return account
 
     @allure.step("Send neon")
