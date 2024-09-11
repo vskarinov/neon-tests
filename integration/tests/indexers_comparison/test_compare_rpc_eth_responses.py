@@ -17,7 +17,7 @@ class TestCompareRpcEthResponses:
         else:
             os.makedirs(LOGS_PATH)
 
-    @pytest.mark.parametrize("blocks", [[54113, 58403]]) # 33537
+    @pytest.mark.parametrize("blocks", [[54113, 58403]])
     def test_get_block_and_transactions_for_indexers(self, endpoints, blocks):
         for block in range(blocks[0], blocks[1]):
             print(block)
@@ -73,8 +73,6 @@ class TestCompareRpcEthResponses:
                 )
             )
         diff = DeepDiff(responses[0], responses[1], exclude_paths="root['id']")
-        print(responses[0])
-        print(diff)
 
         if "values_changed" in diff or "type_changes" in diff:
             filename = f"{LOGS_PATH}/{file_name}.txt"
@@ -84,6 +82,7 @@ class TestCompareRpcEthResponses:
                     file.write(f"Method: {method_name}\n")
                 else:
                     file.write(f"\n\n\n\nMethod: {method_name}\n")
+                file.write(f"Params: {params}\n")
                 for i, response in enumerate(responses):
                     file.write(f"\nResponse from {endpoints[i]['name']} indexer: {response}\n")
                 file.write("\nDifferences:\n")
