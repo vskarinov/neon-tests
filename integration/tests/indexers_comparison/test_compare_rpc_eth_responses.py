@@ -2,7 +2,7 @@ import allure
 import pytest
 import os
 
-from integration.tests.indexers_comparison.constants import LOGS_PATH
+from integration.tests.indexers_comparison.constants import LOGS_PATH, START_BLOCK, FINISH_BLOCK
 from deepdiff import DeepDiff
 
 
@@ -17,7 +17,7 @@ class TestCompareRpcEthResponses:
         else:
             os.makedirs(LOGS_PATH)
 
-    @pytest.mark.parametrize("blocks", [[54113, 58403]])
+    @pytest.mark.parametrize("blocks", [[START_BLOCK, FINISH_BLOCK]])
     def test_get_block_and_transactions_for_indexers(self, endpoints, blocks):
         for block in range(blocks[0], blocks[1]):
             print(block)
