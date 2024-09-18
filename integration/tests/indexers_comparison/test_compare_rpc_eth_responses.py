@@ -19,7 +19,9 @@ class TestCompareRpcEthResponses:
 
     @pytest.mark.parametrize("blocks", [[START_BLOCK, FINISH_BLOCK]])
     def test_get_block_and_transactions_for_indexers(self, endpoints, blocks):
-        for block in range(blocks[0], blocks[1]):
+        start_block = int(blocks[0])
+        finish_block = int(blocks[1])
+        for block in range(start_block, finish_block):
             print(block)
             response = self.compare_rpc_method_responses(
                 method_name="eth_getBlockByNumber",
