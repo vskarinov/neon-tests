@@ -57,7 +57,9 @@ class TestCompareRpcEthResponses:
                     if len(receipt["result"]["logs"]) > 0:
                         self.compare_rpc_method_responses(
                             method_name="eth_getLogs",
-                            params=[{"topics": [receipt["result"]["logs"][0]["topics"][0]]}],
+                            params=[{"topics": [receipt["result"]["logs"][0]["topics"][0]],
+                                     "fromBlock": hex(block),
+                                     "toBlock": hex(block)}],
                             endpoints=endpoints,
                             file_name=block,
                         )
